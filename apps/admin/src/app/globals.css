@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Escanear archivos de packages para que las clases que se usan ahí
+   generen sus reglas en el CSS final. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../packages/shared/src/**/*.{ts,tsx}";
+
+/* Tema oscuro forzado para el panel admin */
+:root {
+  --dev-bg:       #0a0a0a;
+  --dev-panel:    #18181b;
+  --dev-border:   #27272a;
+  --dev-text:     #e4e4e7;
+  --dev-muted:    #71717a;
+  --dev-accent:   #ef4444;
+  --dev-warn:     #f59e0b;
+  --dev-ok:       #10b981;
+}
+
+html, body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--dev-bg);
+  color: var(--dev-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mono { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
+
+*:focus-visible {
+  outline: 2px solid var(--dev-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@theme {
+  --color-dev-bg: #0a0a0a;
+  --color-dev-panel: #18181b;
+  --color-dev-border: #27272a;
+  --color-dev-text: #e4e4e7;
+  --color-dev-muted: #71717a;
+  --color-dev-accent: #ef4444;
+}

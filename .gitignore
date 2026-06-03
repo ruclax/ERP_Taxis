@@ -1,0 +1,74 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Variables de entorno (secretos)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Builds
+.next/
+out/
+dist/
+build/
+.turbo/
+.expo/
+.expo-shared/
+.tauri/
+src-tauri/target/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Coverage
+coverage/
+*.lcov
+
+# Scripts artifacts (pueden contener datos personales del padrón: nombres, RFC, UUIDs)
+scripts/.cache/
+scripts/*-report.json
+scripts/*-errores.json
+scripts/danieldocx-plain.txt
+scripts/_danieldocx/
+# Scripts auxiliares de inspección/diagnóstico (con prefijo underscore — no son parte del producto)
+scripts/_*.ts
+
+# Datos sensibles del padrón (NUNCA versionar — RFC, CURP, direcciones, antidoping son LFPDPPP)
+uploads/
+!uploads/.gitkeep
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Herramientas de IA / asistentes (no son parte del producto)
+.agents/
+.claude/
+.mcp.json
+skills-lock.json
+.cursor/
+
+# Prototipo HTML/JSX original (ya migrado a apps/web; se conserva localmente como referencia)
+prototype/
+
+# Tipos de TS generados (se regeneran con pnpm db:types)
+packages/db/tsconfig.tsbuildinfo
+apps/web/tsconfig.tsbuildinfo
+apps/admin/tsconfig.tsbuildinfo
+**/tsconfig.tsbuildinfo

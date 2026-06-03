@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "@erp/ui/styles";
+
+/* Tailwind v4: escanear archivos de los packages del workspace para que
+   las clases utilizadas dentro generen sus reglas CSS. Sin esto, los
+   componentes en packages/ui no generan utilidades responsive. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../packages/auth/src/**/*.{ts,tsx}";
+@source "../../../../packages/shared/src/**/*.{ts,tsx}";
+
+@theme {
+  --color-erp-crit: #420808;
+  --color-erp-ink: #0f172a;
+  --color-erp-body: #334155;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}

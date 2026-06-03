@@ -1,0 +1,85 @@
+/* ─────────────────────────────────────────────────────────────
+ * Estilos globales del ERP Taxi (migrados del prototipo)
+ * Importar este archivo desde apps/web/src/app/globals.css
+ * ───────────────────────────────────────────────────────────── */
+
+:root {
+  --crit:        #420808;
+  --crit-bg:     #fef2f2;
+  --crit-border: #fecaca;
+  --ink:         #0f172a;
+  --body:        #334155;
+  --label:       #64748b;
+  --line:        #e2e8f0;
+  --oxford:      #1e293b;
+}
+
+html, body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--body);
+  background: #f8fafc;
+  font-size: 18px;          /* Base accesible para usuarios mayores */
+  line-height: 1.55;        /* Más holgado que el default 1.5 */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.mono       { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
+.ink        { color: var(--ink); }
+/* Labels de campo: 14px en vez de 13 (subimos 1pt para legibilidad) */
+.label-erp  { color: var(--label); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.crit       { color: var(--crit); }
+.crit-bg    { background: var(--crit-bg); }
+.num        { font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+
+/* Helper: targets táctiles cómodos (≥48px) — usar en botones principales */
+.tap-target { min-height: 48px; min-width: 48px; }
+/* Helper: contraste reforzado para texto secundario sobre blanco */
+.text-secondary { color: #475569; }   /* slate-600, cumple WCAG AA en 14px+ */
+
+/* Senior-friendly focus */
+*:focus-visible {
+  outline: 3px solid var(--crit);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar discreto */
+::-webkit-scrollbar          { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb    { background: #cbd5e1; border-radius: 6px; }
+::-webkit-scrollbar-track    { background: transparent; }
+
+/* Sidebar item active rail */
+.nav-rail {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  background: #b91c1c;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Soft drop on red alerts */
+.alert-shadow {
+  box-shadow: 0 1px 0 rgba(66, 8, 8, 0.04), 0 0 0 1px var(--crit-border) inset;
+}
+
+/* Botones del prototipo */
+.btn-primary {
+  background: var(--oxford);
+  color: white;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--crit); }
+
+.btn-secondary {
+  color: var(--label);
+  border: 1px solid var(--line);
+  background: white;
+}
+.btn-secondary:hover { color: var(--ink); border-color: var(--ink); }
+
+/* Pulse para indicadores en vivo */
+@keyframes softPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.pulse-dot { animation: softPulse 1.8s ease-in-out infinite; }
