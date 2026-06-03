@@ -1442,6 +1442,7 @@ export type Database = {
           soc_tran: boolean
           soc_veint: boolean
           tipo_escalafon: Database["public"]["Enums"]["tipo_escalafon"]
+          tipo_padron: Database["public"]["Enums"]["tipo_padron"] | null
           tipo_socio: Database["public"]["Enums"]["tipo_socio"]
           turno: string | null
           updated_at: string
@@ -1478,6 +1479,7 @@ export type Database = {
           soc_tran?: boolean
           soc_veint?: boolean
           tipo_escalafon?: Database["public"]["Enums"]["tipo_escalafon"]
+          tipo_padron?: Database["public"]["Enums"]["tipo_padron"] | null
           tipo_socio?: Database["public"]["Enums"]["tipo_socio"]
           turno?: string | null
           updated_at?: string
@@ -1514,6 +1516,7 @@ export type Database = {
           soc_tran?: boolean
           soc_veint?: boolean
           tipo_escalafon?: Database["public"]["Enums"]["tipo_escalafon"]
+          tipo_padron?: Database["public"]["Enums"]["tipo_padron"] | null
           tipo_socio?: Database["public"]["Enums"]["tipo_socio"]
           turno?: string | null
           updated_at?: string
@@ -2245,6 +2248,7 @@ export type Database = {
         | "BAJA_TEMPORAL"
         | "NO_PERTENECE"
       tipo_escalafon: "CONCESIONARIO" | "ASPIRANTE" | "NINGUNO"
+      tipo_padron: "CONCESIONARIO" | "TRANSITORIO" | "CUOTA_25"
       tipo_socio:
         | "CONCESIONARIO"
         | "AGENCIA"
@@ -2413,6 +2417,7 @@ export const Constants = {
         "NO_PERTENECE",
       ],
       tipo_escalafon: ["CONCESIONARIO", "ASPIRANTE", "NINGUNO"],
+      tipo_padron: ["CONCESIONARIO", "TRANSITORIO", "CUOTA_25"],
       tipo_socio: [
         "CONCESIONARIO",
         "AGENCIA",

@@ -10,7 +10,8 @@ import {
 import { DataTable } from '@erp/ui/data';
 import { useRecentSearches } from '@erp/ui/hooks';
 import {
-  ExternalLink, X, Crown, IdCard, AlertTriangle, ShieldAlert,
+  ExternalLink, X, CheckCircle2, Clock, Percent, HelpCircle,
+  AlertTriangle, ShieldAlert, IdCard,
   DollarSign, Car, MapPin, FileWarning, Calendar, AlertOctagon,
 } from 'lucide-react';
 import { fmtFechaCorta } from '@erp/shared/formatters';
@@ -20,13 +21,33 @@ import type { ChoferAlerta, ConteosChoferes } from '@erp/db/queries/choferes';
 
 interface Filtros {
   q: string;
-  tipo: string;        // '' | concesionario | solo_chofer
-  sitio: string;       // '' | uuid
-  licencia: string;    // '' | VENCIDA | URGENTE | PROXIMA | VIGENTE | SIN_REGISTRO
+  tipo: string;        // '' | CONCESIONARIO | TRANSITORIO | CUOTA_25 | sin_clasif
+  sitio: string;
+  licencia: string;
   antidoping: string;
   poliza: string;
-  mens: string;        // '' | '1'
-  acc: string;         // '' | '1'
+  mens: string;
+  acc: string;
+}
+
+// Clasificación formal del padrón → label + color + icono
+const TIPO_PADRON_BADGE: Record<string, { label: string; cls: string; Icon: typeof CheckCircle2 }> = {
+  CONCESIONARIO: { label: 'Concesionario', cls: 'bg-emerald-100 text-emerald-800', Icon: CheckCircle2 },
+  TRANSITORIO:   { label: 'Transitorio',   cls: 'bg-sky-100 text-sky-800',         Icon: Clock },
+  CUOTA_25:      { label: 'Cuota 25%',     cls: 'bg-amber-100 text-amber-800',     Icon: Percent },
+  SIN_CLASIF:    { label: 'Sin clasificar',cls: 'bg-slate-100 text-slate-500',     Icon: HelpCircle },
+};
+
+function TipoPadronBadge({ tipo }: { tipo: string | null }) {
+  const key = tipo ?? 'SIN_CLASIF';
+  const cfg = TIPO_PADRON_BADGE[key] ?? TIPO_PADRON_BADGE.SIN_CLASIF;
+  if (!cfg) return null;
+  const { label, cls, Icon } = cfg;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${cls}`}>
+      <Icon size={10} /> {label}
+    </span>
+  );
 }
 
 interface Props {
@@ -129,27 +150,34 @@ export default function ChoferesView({
   // ── Vistas rápidas: las alertas del día a día ──
   const vistas: VistaRapidaItem[] = useMemo(() => [
     {
-      id: 'concesionarios', label: 'Concesionarios', description: 'Titulares que también manejan',
-      icon: <Crown size={20} />, count: conteos.concesionarios, tone: 'success',
-      active: filtros.tipo === 'concesionario',
-      onClick: () => setFiltros({ ...filtros, tipo: 'concesionario' }),
+      id: 'concesionarios', label: 'Concesionarios', description: 'Titulares formales del padrón',
+      icon: <CheckCircle2 size={20} />, count: conteos.concesionarios, tone: 'success',
+      active: filtros.tipo === 'CONCESIONARIO',
+      onClick: () => setFiltros({ ...filtros, tipo: 'CONCESIONARIO' }),
     },
     {
-      id: 'solo_chofer', label: 'Solo choferes', description: 'Empleados sin concesión',
-      icon: <IdCard size={20} />, count: conteos.solo_chofer,
-      active: filtros.tipo === 'solo_chofer',
-      onClick: () => setFiltros({ ...filtros, tipo: 'solo_chofer' }),
+      id: 'transitorios', label: 'Transitorios', description: 'Operan sin titularidad permanente',
+      icon: <Clock size={20} />, count: conteos.transitorios,
+      active: filtros.tipo === 'TRANSITORIO',
+      onClick: () => setFiltros({ ...filtros, tipo: 'TRANSITORIO' }),
+    },
+    {
+      id: 'cuota_25', label: 'Cuota 25%', description: 'Categoría especial',
+      icon: <Percent size={20} />, count: conteos.cuota_25, tone: 'warn',
+      active: filtros.tipo === 'CUOTA_25',
+      onClick: () => setFiltros({ ...filtros, tipo: 'CUOTA_25' }),
+    },
+    {
+      id: 'sin_clasif', label: 'Sin clasificar', description: 'Sin tipo en padrón oficial',
+      icon: <HelpCircle size={20} />, count: conteos.sin_clasif,
+      active: filtros.tipo === 'sin_clasif',
+      onClick: () => setFiltros({ ...filtros, tipo: 'sin_clasif' }),
     },
     {
       id: 'lic_venc', label: 'Licencia vencida', icon: <FileWarning size={20} />, tone: 'accent',
       count: conteos.licencia_vencida,
       active: filtros.licencia === 'VENCIDA',
       onClick: () => setFiltros({ ...filtros, licencia: 'VENCIDA' }),
-    },
-    {
-      id: 'lic_pron', label: 'Licencia por vencer', icon: <Calendar size={20} />, tone: 'warn',
-      count: conteos.licencia_porvencer,
-      active: filtros.licencia === 'URGENTE' || filtros.licencia === 'PROXIMA',
     },
     {
       id: 'pol_venc', label: 'Póliza vencida', description: 'Vehículo sin seguro', icon: <ShieldAlert size={20} />, tone: 'accent',
@@ -174,14 +202,16 @@ export default function ChoferesView({
   // ── Panel lateral ──
   const filterGroups: FilterGroup[] = useMemo(() => [
     {
-      id: 'tipo', label: 'Tipo de chofer',
-      icon: <Crown size={16} />,
+      id: 'tipo', label: 'Clasificación del padrón',
+      icon: <IdCard size={16} />,
       type: 'radio',
       value: filtros.tipo || null,
       onChange: (v) => setFiltro('tipo', (v as string) ?? ''),
       options: [
-        { value: 'concesionario', label: 'Concesionario', hint: 'Titular vigente que maneja' },
-        { value: 'solo_chofer',   label: 'Solo chofer', hint: 'Empleado sin concesión' },
+        { value: 'CONCESIONARIO', label: 'Concesionario',   hint: 'Titular formal' },
+        { value: 'TRANSITORIO',   label: 'Transitorio',     hint: 'Opera sin titularidad' },
+        { value: 'CUOTA_25',      label: 'Cuota 25%',       hint: 'Categoría especial' },
+        { value: 'sin_clasif',    label: 'Sin clasificar',  hint: 'Sin tipo en padrón' },
       ],
     },
     {
@@ -301,7 +331,14 @@ export default function ChoferesView({
           {hayFiltro && (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="text-secondary">Aplicados:</span>
-              {filtros.tipo && <Chip onRemove={() => setFiltro('tipo', '')}>{filtros.tipo === 'concesionario' ? 'Concesionarios' : 'Solo choferes'}</Chip>}
+              {filtros.tipo && (
+                <Chip onRemove={() => setFiltro('tipo', '')}>
+                  {filtros.tipo === 'CONCESIONARIO' ? 'Concesionarios'
+                   : filtros.tipo === 'TRANSITORIO' ? 'Transitorios'
+                   : filtros.tipo === 'CUOTA_25' ? 'Cuota 25%'
+                   : 'Sin clasificar'}
+                </Chip>
+              )}
               {filtros.sitio && <Chip onRemove={() => setFiltro('sitio', '')}>Sitio: {sitios.find((s) => s.id === filtros.sitio)?.nombre ?? '?'}</Chip>}
               {filtros.licencia && <Chip onRemove={() => setFiltro('licencia', '')}>Licencia: {ESTADO_LABEL[filtros.licencia]}</Chip>}
               {filtros.antidoping && <Chip onRemove={() => setFiltro('antidoping', '')}>Antidoping: {ESTADO_LABEL[filtros.antidoping]}</Chip>}
@@ -335,11 +372,9 @@ export default function ChoferesView({
                 key: 'chofer', header: 'Chofer',
                 cell: (r) => (
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="truncate font-medium ink">{r.chofer_nombre}</span>
-                      {r.es_concesionario && (
-                        <span title="También es concesionario titular vigente"><Crown size={14} className="shrink-0 text-amber-600" /></span>
-                      )}
+                      <TipoPadronBadge tipo={r.chofer_tipo_padron} />
                     </div>
                     <div className="mono text-xs text-slate-500 truncate">
                       {r.chofer_codigo} {r.chofer_rfc ? ` · ${r.chofer_rfc}` : ''}

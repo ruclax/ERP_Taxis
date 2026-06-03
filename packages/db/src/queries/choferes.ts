@@ -131,11 +131,17 @@ export async function asignarChofer(sb: SB, input: NuevoChoferInput) {
 
 export type EstadoVencimiento = 'SIN_REGISTRO' | 'VENCIDA' | 'URGENTE' | 'PROXIMA' | 'VIGENTE';
 
+export type TipoPadron = 'CONCESIONARIO' | 'TRANSITORIO' | 'CUOTA_25';
+
 export interface ListarChoferesFiltros {
   /** Texto a buscar en nombre/RFC/CURP/escalafón del chofer */
   busqueda?: string;
-  /** Tipo: 'concesionario', 'solo_chofer' (no titular de concesión vigente), o ambos */
-  tipo?: 'concesionario' | 'solo_chofer';
+  /**
+   * Filtro por clasificación formal del padrón.
+   * - 'CONCESIONARIO' | 'TRANSITORIO' | 'CUOTA_25' → ese tipo exacto
+   * - 'sin_clasif' → tipo_padron IS NULL (sin clasificación formal)
+   */
+  tipoPadron?: TipoPadron | 'sin_clasif';
   /** Filtrar por sitio donde opera el taxi */
   sitioId?: string;
   /** Filtrar por estado de licencia */
@@ -166,8 +172,8 @@ export async function listarChoferes(sb: SB, f: ListarChoferesFiltros = {}) {
   let q: any = sb.from('v_choferes_alertas' as never).select('*', { count: 'exact' });
 
   if (socioIds) q = q.in('chofer_socio_id', socioIds);
-  if (f.tipo === 'concesionario') q = q.eq('es_concesionario', true);
-  if (f.tipo === 'solo_chofer')   q = q.eq('es_concesionario', false);
+  if (f.tipoPadron === 'sin_clasif') q = q.is('chofer_tipo_padron', null);
+  else if (f.tipoPadron) q = q.eq('chofer_tipo_padron', f.tipoPadron);
   if (f.sitioId) q = q.eq('sitio_id', f.sitioId);
   if (f.licencia)   q = q.eq('licencia_estado',   f.licencia);
   if (f.antidoping) q = q.eq('antidoping_estado', f.antidoping);
@@ -201,7 +207,7 @@ export interface ChoferAlerta {
   chofer_tipo_escalafon: string;
   chofer_ocupacion: string | null;
   chofer_estatus: string;
-  es_concesionario: boolean;
+  chofer_tipo_padron: TipoPadron | null;
   numero_concesion: string | null;
   taxi_numero: number | null;
   concesion_estado: string | null;
@@ -224,14 +230,16 @@ export interface ChoferAlerta {
 }
 
 export async function conteosChoferes(sb: SB) {
-  // Una sola query a la vista — se cuenta en JS para evitar 8 round-trips
+  // Una sola query a la vista — se cuenta en JS para evitar varios round-trips
   const { data, error } = await sb.from('v_choferes_alertas' as never).select('*');
   if (error) throw error;
   const rows = (data ?? []) as ChoferAlerta[];
   return {
     total: rows.length,
-    concesionarios: rows.filter((r) => r.es_concesionario).length,
-    solo_chofer:    rows.filter((r) => !r.es_concesionario).length,
+    concesionarios: rows.filter((r) => r.chofer_tipo_padron === 'CONCESIONARIO').length,
+    transitorios:   rows.filter((r) => r.chofer_tipo_padron === 'TRANSITORIO').length,
+    cuota_25:       rows.filter((r) => r.chofer_tipo_padron === 'CUOTA_25').length,
+    sin_clasif:     rows.filter((r) => r.chofer_tipo_padron === null).length,
     licencia_vencida:   rows.filter((r) => r.licencia_estado === 'VENCIDA').length,
     licencia_porvencer: rows.filter((r) => ['URGENTE','PROXIMA'].includes(r.licencia_estado)).length,
     antidoping_vencido: rows.filter((r) => r.antidoping_estado === 'VENCIDA').length,
