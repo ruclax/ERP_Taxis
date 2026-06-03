@@ -22,8 +22,36 @@ export interface RolDef {
   ordenJerarquia: number;
 }
 
-// Catálogo completo de roles con las personas reales del documento
+// Catálogo completo de roles.
+//
+// Política de quién puede ocupar cada rol:
+//   • superadmin       — Solo el desarrollador de la plataforma (no requiere ser agremiado).
+//   • admin_plataforma — Personal contratado por el sindicato para operar la
+//                        plataforma. No requiere ser agremiado, pero puede serlo.
+//   • 8 roles electos  — Sec.General, Sec.Organización, Tesorero, Sec.Actas,
+//                        Sec.Trabajo, Honor y Justicia, Hacienda, Delegado.
+//                        TODOS deben ser agremiados elegidos por asamblea.
+//
+// Esta política es decisión humana — no se enforza con constraints SQL.
 export const ROLES: Record<RolCodigo, RolDef> = {
+  superadmin: {
+    codigo: 'superadmin',
+    nombre: 'Super Administrador (Desarrollador)',
+    descripcion: 'Rol exclusivo del desarrollador. Acceso god-mode a todas las tablas y bypasea RLS.',
+    persona: 'Daniel Isaías Sánchez Treviño',
+    scope: 'GLOBAL',
+    modulos: ['mipanel','dashboard','padron','flota','choferes','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
+    ordenJerarquia: 0,
+  },
+  admin_plataforma: {
+    codigo: 'admin_plataforma',
+    nombre: 'Administrador de Plataforma',
+    descripcion: 'Operador contratado por el sindicato. Administra, configura y mantiene al día la plataforma. Encargado de convocatorias, notificaciones y actualización de datos sensibles. Acceso de lectura y escritura a todos los módulos; cada acción queda en `auditoria`.',
+    persona: 'Jesús Antonio Torres Solís',
+    scope: 'GLOBAL',
+    modulos: ['mipanel','dashboard','padron','flota','choferes','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
+    ordenJerarquia: 1,
+  },
   sec_general: {
     codigo: 'sec_general',
     nombre: 'Secretario General',
@@ -31,7 +59,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     persona: 'Jorge Alberto Hernández González',
     scope: 'GLOBAL',
     modulos: ['mipanel','dashboard','padron','flota','choferes','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
-    ordenJerarquia: 1,
+    ordenJerarquia: 2,
   },
   sec_organizacion: {
     codigo: 'sec_organizacion',
@@ -41,7 +69,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     suplente: 'Arturo Villarreal Amaro',
     scope: 'GLOBAL',
     modulos: ['mipanel','dashboard','padron','flota','choferes'],
-    ordenJerarquia: 2,
+    ordenJerarquia: 3,
   },
   tesorero: {
     codigo: 'tesorero',
@@ -51,7 +79,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     suplente: 'Jesús Antonio Torres Solís',
     scope: 'GLOBAL',
     modulos: ['mipanel','dashboard','tesoreria','funerario','polizas'],
-    ordenJerarquia: 3,
+    ordenJerarquia: 4,
   },
   sec_actas: {
     codigo: 'sec_actas',
@@ -61,7 +89,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     suplente: 'Alejandro Jacinto Treviño Fernández',
     scope: 'GLOBAL',
     modulos: ['mipanel','dashboard','asambleas'],
-    ordenJerarquia: 4,
+    ordenJerarquia: 5,
   },
   sec_trabajo: {
     codigo: 'sec_trabajo',
@@ -71,7 +99,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     suplente: 'José Luis Tobías Téllez',
     scope: 'AREA',
     modulos: ['mipanel','dashboard','bitacora','padron'],
-    ordenJerarquia: 5,
+    ordenJerarquia: 6,
   },
   honor_justicia: {
     codigo: 'honor_justicia',
@@ -81,7 +109,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     suplente: 'Marcial Pérez Alemán',
     scope: 'GLOBAL',
     modulos: ['mipanel','dashboard','honor','padron'],
-    ordenJerarquia: 6,
+    ordenJerarquia: 7,
   },
   hacienda: {
     codigo: 'hacienda',
@@ -92,7 +120,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     scope: 'GLOBAL',
     modulos: ['mipanel','dashboard','tesoreria','funerario'],
     soloLectura: ['tesoreria','funerario'],
-    ordenJerarquia: 7,
+    ordenJerarquia: 8,
   },
   delegado: {
     codigo: 'delegado',
@@ -102,7 +130,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     scope: 'SITIO',
     modulos: ['mipanel','dashboard','padron','flota','choferes','polizas','funerario'],
     soloLectura: ['padron','flota','choferes','polizas'],
-    ordenJerarquia: 8,
+    ordenJerarquia: 9,
   },
 };
 

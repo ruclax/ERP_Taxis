@@ -20,7 +20,8 @@
     "db:types": "tsx scripts/generate-types.ts",
     "db:reset": "tsx scripts/migrate.ts --reset",
     "db:admin": "tsx scripts/seed-admin-user.ts",
-    "db:superadmin": "tsx scripts/seed-superadmin.ts"
+    "db:superadmin": "tsx scripts/seed-superadmin.ts",
+    "db:admin-plataforma": "tsx scripts/seed-admin-plataforma.ts"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",

@@ -72,3 +72,6 @@ packages/db/tsconfig.tsbuildinfo
 apps/web/tsconfig.tsbuildinfo
 apps/admin/tsconfig.tsbuildinfo
 **/tsconfig.tsbuildinfo
+
+# Auto-generado por Next.js en cada build (varía entre máquinas)
+**/next-env.d.ts

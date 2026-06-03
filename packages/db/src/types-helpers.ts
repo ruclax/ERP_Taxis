@@ -37,7 +37,17 @@ export type EstatusVehiculo = 'ACTIVO' | 'FUERA_SINDICATO' | 'BAJA' | 'SINIESTRA
 export type EstadoConcesion = 'VIGENTE' | 'BAJA' | 'EN_TRAMITE' | 'CESION_PENDIENTE' | 'SUCESION_PENDIENTE';
 
 // Códigos de rol (coinciden con la tabla roles)
+//
+// Roles ELECTIVOS por asamblea (requieren ser agremiados del padrón):
+//   sec_general, sec_organizacion, tesorero, sec_actas, sec_trabajo,
+//   honor_justicia, hacienda, delegado.
+//
+// Roles "extra-electivos" (NO requieren ser agremiados):
+//   superadmin       — desarrollador de la plataforma (god-mode)
+//   admin_plataforma — operador contratado por el sindicato
 export type RolCodigo =
+  | 'superadmin'
+  | 'admin_plataforma'
   | 'sec_general'
   | 'sec_organizacion'
   | 'tesorero'
