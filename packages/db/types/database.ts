@@ -772,6 +772,92 @@ export type Database = {
         }
         Relationships: []
       }
+      documentos: {
+        Row: {
+          concesion_id: string | null
+          created_at: string
+          id: string
+          mime: string | null
+          nombre_original: string | null
+          notas: string | null
+          poliza_id: string | null
+          socio_id: string | null
+          storage_path: string
+          subido_por: string | null
+          tamano_bytes: number | null
+          tipo: Database["public"]["Enums"]["tipo_documento"]
+          titulo: string | null
+          updated_at: string
+          vehiculo_id: string | null
+          vigencia: string | null
+        }
+        Insert: {
+          concesion_id?: string | null
+          created_at?: string
+          id?: string
+          mime?: string | null
+          nombre_original?: string | null
+          notas?: string | null
+          poliza_id?: string | null
+          socio_id?: string | null
+          storage_path: string
+          subido_por?: string | null
+          tamano_bytes?: number | null
+          tipo: Database["public"]["Enums"]["tipo_documento"]
+          titulo?: string | null
+          updated_at?: string
+          vehiculo_id?: string | null
+          vigencia?: string | null
+        }
+        Update: {
+          concesion_id?: string | null
+          created_at?: string
+          id?: string
+          mime?: string | null
+          nombre_original?: string | null
+          notas?: string | null
+          poliza_id?: string | null
+          socio_id?: string | null
+          storage_path?: string
+          subido_por?: string | null
+          tamano_bytes?: number | null
+          tipo?: Database["public"]["Enums"]["tipo_documento"]
+          titulo?: string | null
+          updated_at?: string
+          vehiculo_id?: string | null
+          vigencia?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_concesion_id_fkey"
+            columns: ["concesion_id"]
+            isOneToOne: false
+            referencedRelation: "concesiones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_poliza_id_fkey"
+            columns: ["poliza_id"]
+            isOneToOne: false
+            referencedRelation: "polizas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_vehiculo_id_fkey"
+            columns: ["vehiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funerario_inscripciones: {
         Row: {
           activa: boolean
@@ -1712,6 +1798,47 @@ export type Database = {
           },
         ]
       }
+      socios_historial_estatus: {
+        Row: {
+          cambiado_por: string | null
+          created_at: string
+          estatus_anterior: Database["public"]["Enums"]["socio_estatus"] | null
+          estatus_nuevo: Database["public"]["Enums"]["socio_estatus"]
+          fecha_efectiva: string | null
+          id: string
+          motivo: string | null
+          socio_id: string
+        }
+        Insert: {
+          cambiado_por?: string | null
+          created_at?: string
+          estatus_anterior?: Database["public"]["Enums"]["socio_estatus"] | null
+          estatus_nuevo: Database["public"]["Enums"]["socio_estatus"]
+          fecha_efectiva?: string | null
+          id?: string
+          motivo?: string | null
+          socio_id: string
+        }
+        Update: {
+          cambiado_por?: string | null
+          created_at?: string
+          estatus_anterior?: Database["public"]["Enums"]["socio_estatus"] | null
+          estatus_nuevo?: Database["public"]["Enums"]["socio_estatus"]
+          fecha_efectiva?: string | null
+          id?: string
+          motivo?: string | null
+          socio_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "socios_historial_estatus_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       socios_licencia_conducir: {
         Row: {
           created_at: string
@@ -2247,6 +2374,16 @@ export type Database = {
         | "BAJA_DEFINITIVA"
         | "BAJA_TEMPORAL"
         | "NO_PERTENECE"
+      tipo_documento:
+        | "LICENCIA"
+        | "POLIZA"
+        | "TITULO_CONCESION"
+        | "INE"
+        | "CURP"
+        | "ACTA_NACIMIENTO"
+        | "COMP_DOMICILIO"
+        | "FOTOGRAFIA"
+        | "OTRO"
       tipo_escalafon: "CONCESIONARIO" | "ASPIRANTE" | "NINGUNO"
       tipo_padron: "CONCESIONARIO" | "TRANSITORIO" | "CUOTA_25"
       tipo_socio:
@@ -2415,6 +2552,17 @@ export const Constants = {
         "BAJA_DEFINITIVA",
         "BAJA_TEMPORAL",
         "NO_PERTENECE",
+      ],
+      tipo_documento: [
+        "LICENCIA",
+        "POLIZA",
+        "TITULO_CONCESION",
+        "INE",
+        "CURP",
+        "ACTA_NACIMIENTO",
+        "COMP_DOMICILIO",
+        "FOTOGRAFIA",
+        "OTRO",
       ],
       tipo_escalafon: ["CONCESIONARIO", "ASPIRANTE", "NINGUNO"],
       tipo_padron: ["CONCESIONARIO", "TRANSITORIO", "CUOTA_25"],

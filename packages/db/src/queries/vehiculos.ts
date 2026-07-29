@@ -127,6 +127,78 @@ export async function conteosFlota(sb: SB): Promise<ConteosFlota> {
   return data as unknown as ConteosFlota;
 }
 
+// ── Escritura de flota (M3) ──
+type PolizaEstado = Database['public']['Enums']['poliza_estado'];
+
+/** Deriva el estado de la póliza a partir de su fecha de vencimiento (regla: <0 vencida, <=30d por vencer). */
+export function estadoPolizaPorVencimiento(fechaVenc: string): PolizaEstado {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const venc = new Date(`${fechaVenc}T00:00:00`);
+  const dias = Math.floor((venc.getTime() - hoy.getTime()) / 86_400_000);
+  if (dias < 0) return 'VENCIDA';
+  if (dias <= 30) return 'POR_VENCER';
+  return 'VIGENTE';
+}
+
+export type VehiculoDatos = {
+  placas: string | null;
+  numero_serie: string | null;
+  marca: string | null;
+  modelo: string | null;
+  anio: number | null;
+  color: string | null;
+  engomado: string | null;
+  estatus: Database['public']['Enums']['vehiculo_estatus'];
+  comentarios: string | null;
+};
+
+/** Crea (ligado a la concesión) o actualiza un vehículo. */
+export async function guardarVehiculo(
+  sb: SB,
+  opts: { id?: string; concesionId?: string; datos: VehiculoDatos }
+): Promise<string> {
+  if (opts.id) {
+    const { error } = await sb.from('vehiculos').update(opts.datos as never).eq('id', opts.id);
+    if (error) throw error;
+    return opts.id;
+  }
+  const { data, error } = await sb
+    .from('vehiculos')
+    .insert({ ...opts.datos, concesion_actual_id: opts.concesionId ?? null, es_independiente: false } as never)
+    .select('id')
+    .single();
+  if (error) throw error;
+  return (data as { id: string }).id;
+}
+
+export type PolizaDatos = {
+  numero_poliza: string;
+  compania: string;
+  costo: number | null;
+  fecha_inicio: string | null;
+  fecha_vencimiento: string;
+  endoso: string | null;
+  comentarios: string | null;
+};
+
+/** Crea (renovación) o actualiza una póliza. El estado se deriva del vencimiento. */
+export async function guardarPoliza(
+  sb: SB,
+  opts: { id?: string; vehiculoId?: string; datos: PolizaDatos }
+): Promise<void> {
+  const estado = estadoPolizaPorVencimiento(opts.datos.fecha_vencimiento);
+  if (opts.id) {
+    const { error } = await sb.from('polizas').update({ ...opts.datos, estado } as never).eq('id', opts.id);
+    if (error) throw error;
+  } else {
+    if (!opts.vehiculoId) throw new Error('Falta el vehículo para la póliza');
+    const { error } = await sb
+      .from('polizas')
+      .insert({ ...opts.datos, estado, vehiculo_id: opts.vehiculoId } as never);
+    if (error) throw error;
+  }
+}
+
 export async function obtenerVehiculo(sb: SB, id: string) {
   const { data, error } = await sb
     .from('vehiculos')

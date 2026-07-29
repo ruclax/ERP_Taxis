@@ -68,6 +68,193 @@ export async function listarSocios(sb: SB, f: SociosListFilters = {}) {
   return { data: data ?? [], total: count ?? 0 };
 }
 
+/** Campos del socio editables desde el expediente (bloques Datos + Clasificación). */
+export type SocioUpdatable = Partial<
+  Pick<
+    Database['public']['Tables']['socios']['Update'],
+    | 'nombre_completo' | 'rfc' | 'curp' | 'fecha_nacimiento' | 'fecha_ingreso'
+    | 'tipo_socio' | 'genero' | 'estado_civil' | 'ocupacion' | 'turno'
+    | 'escalafon_numero' | 'tipo_escalafon' | 'soc_act' | 'soc_veint' | 'soc_tran'
+    | 'tipo_padron' | 'firma_actual' | 'updated_by_user_id'
+  >
+>;
+
+/** Actualiza campos del socio. La RLS gobierna quién puede (sec_general/organización/admin). */
+export async function actualizarSocio(sb: SB, id: string, cambios: SocioUpdatable) {
+  const { error } = await sb.from('socios').update(cambios as never).eq('id', id);
+  if (error) throw error;
+}
+
+// ── Dirección actual (M2 bloque 2) ──
+export type DireccionActual = {
+  calle: string | null;
+  numero_ext: string | null;
+  numero_int: string | null;
+  colonia: string | null;
+  ciudad: string | null;
+  estado: string | null;
+  codigo_postal: string | null;
+  referencias: string | null;
+};
+
+/** Inserta o actualiza la dirección `ACTUAL` del socio (una sola por índice único). */
+export async function guardarDireccionActual(sb: SB, socioId: string, dir: DireccionActual) {
+  const { data: existente } = await sb
+    .from('socios_direcciones')
+    .select('id')
+    .eq('socio_id', socioId)
+    .eq('es_actual', true)
+    .maybeSingle();
+
+  if (existente) {
+    const { error } = await sb
+      .from('socios_direcciones')
+      .update(dir as never)
+      .eq('id', (existente as { id: string }).id);
+    if (error) throw error;
+  } else {
+    const { error } = await sb
+      .from('socios_direcciones')
+      .insert({ socio_id: socioId, tipo: 'ACTUAL', es_actual: true, ...dir } as never);
+    if (error) throw error;
+  }
+}
+
+// ── Contactos EAV (M2 bloque 2) ──
+export type ContactoTipo = 'TEL_CEL' | 'TEL_CASA' | 'TEL_RECADO' | 'CORREO' | 'OTRO';
+
+export async function agregarContacto(
+  sb: SB,
+  socioId: string,
+  contacto: { tipo: ContactoTipo; valor: string; es_principal?: boolean }
+) {
+  const { error } = await sb
+    .from('socios_contactos')
+    .insert({
+      socio_id: socioId,
+      tipo: contacto.tipo,
+      valor: contacto.valor,
+      es_principal: contacto.es_principal ?? false,
+    } as never);
+  if (error) throw error;
+}
+
+export async function eliminarContacto(sb: SB, id: string) {
+  const { error } = await sb.from('socios_contactos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── Beneficiarios (M2 bloque 3) ──
+export type BeneficiarioInput = {
+  nombre: string;
+  parentesco: string | null;
+  telefono: string | null;
+  direccion: string | null;
+  porcentaje: number | null;
+  es_designado: boolean;
+  notas: string | null;
+};
+
+export async function agregarBeneficiario(sb: SB, socioId: string, b: BeneficiarioInput) {
+  const { error } = await sb.from('socios_beneficiarios').insert({ socio_id: socioId, ...b } as never);
+  if (error) throw error;
+}
+
+export async function actualizarBeneficiario(sb: SB, id: string, b: BeneficiarioInput) {
+  const { error } = await sb.from('socios_beneficiarios').update(b as never).eq('id', id);
+  if (error) throw error;
+}
+
+export async function eliminarBeneficiario(sb: SB, id: string) {
+  const { error } = await sb.from('socios_beneficiarios').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── Licencia de conducir + Credencial de elector (M2 bloque 4) ──
+export type LicenciaInput = {
+  numero_licencia: string | null;
+  tipo: string | null;
+  fecha_emision: string | null;
+  fecha_vencimiento: string | null;
+  observaciones: string | null;
+};
+
+/** Upsert de la licencia `es_actual` del socio (una vigente). */
+export async function guardarLicenciaActual(sb: SB, socioId: string, lic: LicenciaInput) {
+  const { data: existente } = await sb
+    .from('socios_licencia_conducir')
+    .select('id')
+    .eq('socio_id', socioId)
+    .eq('es_actual', true)
+    .maybeSingle();
+  if (existente) {
+    const { error } = await sb.from('socios_licencia_conducir').update(lic as never)
+      .eq('id', (existente as { id: string }).id);
+    if (error) throw error;
+  } else {
+    const { error } = await sb.from('socios_licencia_conducir')
+      .insert({ socio_id: socioId, es_actual: true, ...lic } as never);
+    if (error) throw error;
+  }
+}
+
+export type CredencialInput = {
+  clave_elector: string | null;
+  seccion: string | null;
+  vigencia: string | null;
+  emision: string | null;
+};
+
+/** Upsert de la credencial de elector (1:1 por socio). */
+export async function guardarCredencial(sb: SB, socioId: string, cred: CredencialInput) {
+  const { data: existente } = await sb
+    .from('socios_credencial_elector')
+    .select('id')
+    .eq('socio_id', socioId)
+    .maybeSingle();
+  if (existente) {
+    const { error } = await sb.from('socios_credencial_elector').update(cred as never)
+      .eq('id', (existente as { id: string }).id);
+    if (error) throw error;
+  } else {
+    const { error } = await sb.from('socios_credencial_elector')
+      .insert({ socio_id: socioId, ...cred } as never);
+    if (error) throw error;
+  }
+}
+
+// ── Cambio de estatus + historial (M4) ──
+export type EstatusSocioValor = Database['public']['Enums']['socio_estatus'];
+export type HistorialEstatus = Database['public']['Tables']['socios_historial_estatus']['Row'];
+
+/** Cambia el estatus del socio vía RPC transaccional (aplica reglas + registra historial). */
+export async function cambiarEstatusSocio(
+  sb: SB,
+  socioId: string,
+  nuevo: EstatusSocioValor,
+  motivo: string | null,
+  fecha: string | null
+) {
+  const { error } = await sb.rpc('cambiar_estatus_socio' as never, {
+    p_socio_id: socioId,
+    p_nuevo: nuevo,
+    p_motivo: motivo,
+    p_fecha: fecha,
+  } as never);
+  if (error) throw error;
+}
+
+/** Historial de transiciones de estatus del socio, más reciente primero. */
+export async function listarHistorialEstatus(sb: SB, socioId: string): Promise<HistorialEstatus[]> {
+  const { data, error } = await sb
+    .from('socios_historial_estatus')
+    .select('*')
+    .eq('socio_id', socioId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function obtenerSocio(sb: SB, id: string) {
   const { data, error } = await sb
     .from('socios')
@@ -83,8 +270,8 @@ export async function obtenerSocio(sb: SB, id: string) {
          estado, es_independiente, fecha_concesion,
          sitios(id, nombre),
          vehiculos!concesion_actual_id(
-           id, placas, marca, modelo, anio, estatus,
-           polizas(id, numero_poliza, compania, fecha_vencimiento, estado)
+           id, placas, numero_serie, marca, modelo, anio, color, engomado, estatus, comentarios,
+           polizas(id, numero_poliza, compania, costo, fecha_inicio, fecha_vencimiento, endoso, estado, comentarios)
          )
        )`
     )

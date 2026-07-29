@@ -66,10 +66,12 @@ export interface AppFrameProps {
   nombreDisplay: string;
   esSuperadmin: boolean;
   roles: RolInfo[];
+  /** Módulos visibles por rol, desde la BD (tabla `roles`). Fuente de verdad del menú. */
+  modulosPorRol?: Record<string, string[]>;
   children: React.ReactNode;
 }
 
-export function AppFrame({ nombreDisplay, esSuperadmin, roles, children }: AppFrameProps) {
+export function AppFrame({ nombreDisplay, esSuperadmin, roles, modulosPorRol, children }: AppFrameProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -100,13 +102,24 @@ export function AppFrame({ nombreDisplay, esSuperadmin, roles, children }: AppFr
     : rolesSindicales[0]?.rolCodigo;
   const activeRolDef = activeRol ? ROLES[activeRol] : null;
 
+  // Visibilidad de módulos: la BD (modulosPorRol) es la fuente de verdad;
+  // si el rol no viene en el catálogo, se cae a la matriz estática de rbac.ts.
+  const puedeVer = useMemo(() => {
+    return (modulo: Modulo): boolean => {
+      if (!activeRol) return false;
+      const desdeBd = modulosPorRol?.[activeRol];
+      if (desdeBd) return desdeBd.includes(modulo);
+      return rolPuedeVer(activeRol, modulo);
+    };
+  }, [activeRol, modulosPorRol]);
+
   // Construye grupos filtrados por rol
   const filteredGroups = useMemo(() => {
     return NAV_GROUPS.map((g) => ({
       label: g.label,
-      items: g.items.filter((i) => rolPuedeVer(activeRol, i.key)),
+      items: g.items.filter((i) => puedeVer(i.key)),
     })).filter((g) => g.items.length > 0);
-  }, [activeRol]);
+  }, [puedeVer]);
 
   const currentKey: Modulo = useMemo(() => {
     for (const g of filteredGroups) {

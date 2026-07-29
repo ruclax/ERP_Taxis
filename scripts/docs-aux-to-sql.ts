@@ -137,17 +137,6 @@ const buildSql = (label: string, header: string, table: string, cols: string, va
   return sql;
 };
 
-let allSql = `-- Docs auxiliares: generado ${new Date().toISOString()}\n\n`;
-
-// Direcciones
-allSql += buildSql(
-  'Direcciones',
-  `with raw(nombre, calle, colonia, codigo_postal) as (values`,
-  `socios_direcciones (socio_id, calle, colonia, codigo_postal, es_actual)`,
-  direcciones.map(v => v),
-  500
-).replace(/^with raw/gm, 'with raw').replace(/\ninsert into socios_direcciones/g, ')\ninsert into socios_direcciones (socio_id, calle, colonia, codigo_postal, es_actual)\nselect s.id, r.calle, r.colonia, r.codigo_postal, true from raw r\njoin socios s on s.nombre_completo = r.nombre\nwhere not exists (select 1 from socios_direcciones d where d.socio_id = s.id);');
-
 writeFileSync(resolve(process.cwd(), 'scripts', 'docs-1-direcciones.sql'), buildDirSql(direcciones));
 writeFileSync(resolve(process.cwd(), 'scripts', 'docs-2-contactos.sql'), buildContSql(contactos));
 writeFileSync(resolve(process.cwd(), 'scripts', 'docs-3-beneficiarios.sql'), buildBenefSql(beneficiarios));

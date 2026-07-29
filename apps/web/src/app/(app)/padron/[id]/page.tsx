@@ -1,13 +1,21 @@
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { createSupabaseServer } from '@erp/db/client/server';
-import { obtenerSocio } from '@erp/db/queries/socios';
+import { obtenerSocio, listarHistorialEstatus } from '@erp/db/queries/socios';
+import { listarDocumentosExpediente, type Documento } from '@erp/db/queries/documentos';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
-import { SocioEstatusPill, PolizaEstadoPill, ConcesionEstadoPill } from '@erp/ui/data';
+import { SocioEstatusPill, ConcesionEstadoPill } from '@erp/ui/data';
 import { fmtFechaCorta, antiguedadTexto } from '@erp/shared/formatters';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import ChoferesPanel from './_components/ChoferesPanel';
+import DocumentosPanel from './_components/DocumentosPanel';
+import EditarSocioModal, { type SocioEditable } from './_components/EditarSocioModal';
+import ContactoDomicilioPanel, { type Contacto, type Direccion } from './_components/ContactoDomicilioPanel';
+import BeneficiariosPanel, { type Beneficiario } from './_components/BeneficiariosPanel';
+import IdentificacionesPanel, { type Licencia, type Credencial } from './_components/IdentificacionesPanel';
+import EstatusPanel, { type HistorialItem } from './_components/EstatusPanel';
+import VehiculoPolizaPanel, { type Vehiculo, type Poliza } from './_components/VehiculoPolizaPanel';
 
 export default async function ExpedientePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,6 +27,28 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
     notFound();
   }
   if (!socio) notFound();
+
+  const concesionesRaw = (socio.concesiones as Array<Record<string, unknown>> | null) ?? [];
+  const concesionIds = concesionesRaw.map((c) => c.id as string);
+  const vehiculoIds = concesionesRaw.flatMap((c) => ((c.vehiculos as Array<{ id: string }>) ?? []).map((v) => v.id));
+  const polizaIds = concesionesRaw.flatMap((c) =>
+    ((c.vehiculos as Array<{ polizas?: Array<{ id: string }> }>) ?? []).flatMap((v) => (v.polizas ?? []).map((p) => p.id))
+  );
+
+  let documentos: Documento[] = [];
+  try {
+    documentos = await listarDocumentosExpediente(supabase, { socioId: id, concesionIds, vehiculoIds, polizaIds });
+  } catch {
+    documentos = [];
+  }
+  const docsSocio = documentos.filter((d) => d.socio_id === id);
+
+  let historialEstatus: HistorialItem[] = [];
+  try {
+    historialEstatus = await listarHistorialEstatus(supabase, id);
+  } catch {
+    historialEstatus = [];
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -52,6 +82,7 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
                     <SocioEstatusPill estatus={socio.estatus} />
                   </div>
                 </div>
+                <EditarSocioModal socioId={id} socio={socioEditable(socio)} />
               </div>
 
               <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -77,6 +108,26 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
         </CardBody>
       </Card>
 
+      {/* Estatus y ciclo de vida (M4) */}
+      <Card>
+        <CardHeader title="Estatus y ciclo de vida" subtitle="Altas, bajas, reactivaciones y defunción con su historial." />
+        <CardBody>
+          <EstatusPanel socioId={id} estatusActual={socio.estatus} historial={historialEstatus} />
+        </CardBody>
+      </Card>
+
+      {/* Contacto y domicilio (M2 bloque 2) */}
+      <Card>
+        <CardHeader title="Contacto y domicilio" />
+        <CardBody>
+          <ContactoDomicilioPanel
+            socioId={id}
+            direccion={direccionActual(socio)}
+            contactos={contactosDe(socio)}
+          />
+        </CardBody>
+      </Card>
+
       {/* Concesiones */}
       <Card>
         <CardHeader
@@ -99,15 +150,7 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
                 taxi_numero: number | null;
                 estado: string;
                 sitios: { nombre: string } | null;
-                vehiculos: Array<{
-                  id: string;
-                  placas: string | null;
-                  marca: string | null;
-                  modelo: string | null;
-                  anio: number | null;
-                  estatus: string;
-                  polizas: Array<{ id: string; numero_poliza: string; compania: string; fecha_vencimiento: string; estado: string }>;
-                }>;
+                vehiculos: Array<Vehiculo & { polizas: Poliza[] }>;
               }>).map((c) => (
                 <div key={c.id} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex items-start justify-between gap-2">
@@ -125,23 +168,13 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
                       <span className="label-erp">Sitio:</span> {c.sitios.nombre}
                     </div>
                   )}
-                  {c.vehiculos && c.vehiculos.length > 0 && (
-                    <div className="mt-3 rounded-lg bg-slate-50 p-3">
-                      <div className="label-erp mb-1">Vehículo</div>
-                      <div className="mono font-medium text-slate-800">{c.vehiculos[0].placas ?? '—'}</div>
-                      <div className="text-xs text-slate-500">
-                        {c.vehiculos[0].marca} {c.vehiculos[0].modelo} {c.vehiculos[0].anio ?? ''}
-                      </div>
-                      {c.vehiculos[0].polizas && c.vehiculos[0].polizas[0] && (
-                        <div className="mt-2 flex items-center justify-between text-xs">
-                          <span className="text-slate-500">
-                            Vence {fmtFechaCorta(c.vehiculos[0].polizas[0].fecha_vencimiento)}
-                          </span>
-                          <PolizaEstadoPill estado={c.vehiculos[0].polizas[0].estado} />
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <VehiculoPolizaPanel
+                    expedienteSocioId={id}
+                    concesionId={c.id}
+                    vehiculo={c.vehiculos?.[0] ?? null}
+                    poliza={c.vehiculos?.[0]?.polizas?.[0] ?? null}
+                    polizaDocumentos={documentos.filter((d) => d.poliza_id === c.vehiculos?.[0]?.polizas?.[0]?.id)}
+                  />
 
                   {/* Choferes (vínculo laboral con esta concesión) */}
                   <ChoferesPanel
@@ -150,10 +183,52 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
                     numeroConcesion={c.numero_concesion}
                     expedienteSocioId={id}
                   />
+
+                  {/* Documentos de la concesión — título (Fase 3 / M5) */}
+                  <div className="mt-3 border-t border-slate-100 pt-3">
+                    <div className="label-erp mb-2">Documentos de la concesión (título)</div>
+                    <DocumentosPanel
+                      owner={{ tipo: 'concesion', id: c.id }}
+                      expedienteSocioId={id}
+                      documentos={documentos.filter((d) => d.concesion_id === c.id)}
+                      compact
+                      defaultTipo="TITULO_CONCESION"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           )}
+        </CardBody>
+      </Card>
+
+      {/* Identificaciones (M2 bloque 4) */}
+      <Card>
+        <CardHeader title="Identificaciones" subtitle="Licencia de conducir y credencial de elector." />
+        <CardBody>
+          <IdentificacionesPanel socioId={id} licencia={licenciaDe(socio)} credencial={credencialDe(socio)} />
+        </CardBody>
+      </Card>
+
+      {/* Beneficiarios (M2 bloque 3) */}
+      <Card>
+        <CardHeader
+          title="Beneficiarios"
+          subtitle="Cónyuge y designados oficiales para efectos de sucesión y paquete funerario."
+        />
+        <CardBody>
+          <BeneficiariosPanel socioId={id} beneficiarios={beneficiariosDe(socio)} />
+        </CardBody>
+      </Card>
+
+      {/* Documentos digitalizados (Expediente Digital — Fase 3) */}
+      <Card>
+        <CardHeader
+          title="Documentos"
+          subtitle="Licencias, pólizas, títulos y demás documentos digitalizados del socio."
+        />
+        <CardBody>
+          <DocumentosPanel owner={{ tipo: 'socio', id }} expedienteSocioId={id} documentos={docsSocio} />
         </CardBody>
       </Card>
 
@@ -168,6 +243,98 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
       )}
     </div>
   );
+}
+
+function direccionActual(socio: Record<string, unknown>): Direccion | null {
+  const dirs = (socio.socios_direcciones as Record<string, unknown>[] | null) ?? [];
+  const d = dirs.find((x) => x.es_actual === true) ?? dirs[0];
+  if (!d) return null;
+  return {
+    calle: (d.calle as string | null) ?? null,
+    numero_ext: (d.numero_ext as string | null) ?? null,
+    numero_int: (d.numero_int as string | null) ?? null,
+    colonia: (d.colonia as string | null) ?? null,
+    ciudad: (d.ciudad as string | null) ?? null,
+    estado: (d.estado as string | null) ?? null,
+    codigo_postal: (d.codigo_postal as string | null) ?? null,
+    referencias: (d.referencias as string | null) ?? null,
+  };
+}
+
+function pickOne(v: unknown): Record<string, unknown> | null {
+  if (Array.isArray(v)) return (v[0] as Record<string, unknown>) ?? null;
+  if (v && typeof v === 'object') return v as Record<string, unknown>;
+  return null;
+}
+
+function licenciaDe(socio: Record<string, unknown>): Licencia | null {
+  const arr = socio.socios_licencia_conducir as Record<string, unknown>[] | null;
+  const l = (arr ?? []).find((x) => x.es_actual === true) ?? (arr ?? [])[0];
+  if (!l) return null;
+  return {
+    numero_licencia: (l.numero_licencia as string | null) ?? null,
+    tipo: (l.tipo as string | null) ?? null,
+    fecha_emision: (l.fecha_emision as string | null) ?? null,
+    fecha_vencimiento: (l.fecha_vencimiento as string | null) ?? null,
+    observaciones: (l.observaciones as string | null) ?? null,
+  };
+}
+
+function credencialDe(socio: Record<string, unknown>): Credencial | null {
+  const c = pickOne(socio.socios_credencial_elector);
+  if (!c) return null;
+  return {
+    clave_elector: (c.clave_elector as string | null) ?? null,
+    seccion: (c.seccion as string | null) ?? null,
+    vigencia: (c.vigencia as string | null) ?? null,
+    emision: (c.emision as string | null) ?? null,
+  };
+}
+
+function beneficiariosDe(socio: Record<string, unknown>): Beneficiario[] {
+  const bs = (socio.socios_beneficiarios as Record<string, unknown>[] | null) ?? [];
+  return bs.map((b) => ({
+    id: b.id as string,
+    nombre: (b.nombre as string) ?? '',
+    parentesco: (b.parentesco as string | null) ?? null,
+    telefono: (b.telefono as string | null) ?? null,
+    direccion: (b.direccion as string | null) ?? null,
+    porcentaje: (b.porcentaje as number | null) ?? null,
+    es_designado: Boolean(b.es_designado),
+    notas: (b.notas as string | null) ?? null,
+  }));
+}
+
+function contactosDe(socio: Record<string, unknown>): Contacto[] {
+  const cs = (socio.socios_contactos as Record<string, unknown>[] | null) ?? [];
+  return cs.map((c) => ({
+    id: c.id as string,
+    tipo: c.tipo as string,
+    valor: c.valor as string,
+    es_principal: Boolean(c.es_principal),
+  }));
+}
+
+function socioEditable(socio: Record<string, unknown>): SocioEditable {
+  return {
+    nombre_completo: (socio.nombre_completo as string) ?? '',
+    rfc: (socio.rfc as string | null) ?? null,
+    curp: (socio.curp as string | null) ?? null,
+    fecha_nacimiento: (socio.fecha_nacimiento as string | null) ?? null,
+    fecha_ingreso: (socio.fecha_ingreso as string | null) ?? null,
+    tipo_socio: (socio.tipo_socio as SocioEditable['tipo_socio']) ?? 'CONCESIONARIO',
+    genero: (socio.genero as SocioEditable['genero']) ?? null,
+    estado_civil: (socio.estado_civil as string | null) ?? null,
+    ocupacion: (socio.ocupacion as string | null) ?? null,
+    turno: (socio.turno as string | null) ?? null,
+    escalafon_numero: (socio.escalafon_numero as number | null) ?? null,
+    tipo_escalafon: (socio.tipo_escalafon as SocioEditable['tipo_escalafon']) ?? 'NINGUNO',
+    tipo_padron: (socio.tipo_padron as SocioEditable['tipo_padron']) ?? null,
+    soc_act: Boolean(socio.soc_act),
+    soc_veint: Boolean(socio.soc_veint),
+    soc_tran: Boolean(socio.soc_tran),
+    firma_actual: Boolean(socio.firma_actual),
+  };
 }
 
 function Field({ label, value, mono }: { label: string; value: string | null | undefined; mono?: boolean }) {

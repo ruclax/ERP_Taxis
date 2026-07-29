@@ -6,7 +6,6 @@ import { createSupabaseServer } from '@erp/db/client/server';
 import {
   nuevoSocioFormSchema,
   type NuevoSocioForm,
-  type SocioInsert,
 } from '@erp/shared/validators';
 
 export type { NuevoSocioForm };
@@ -24,74 +23,30 @@ export async function crearSocio(form: NuevoSocioForm): Promise<CrearSocioResult
     }
     return { ok: false, error: 'Datos inválidos', fieldErrors };
   }
-  const { socio, direccion, contacto, concesion } = parsed.data;
 
   const sb = createSupabaseServer(await cookies());
 
-  // 1) Insertar socio
-  const socioPayload: SocioInsert = { ...socio };
-  const { data: newSocio, error: errSocio } = await sb
-    .from('socios')
-    .insert(socioPayload as never)
-    .select('id')
-    .single();
-  if (errSocio || !newSocio) {
-    if (errSocio?.code === '23505') {
-      const msg = errSocio.message.includes('rfc') ? 'Ya existe un socio con ese RFC'
-        : errSocio.message.includes('curp') ? 'Ya existe un socio con esa CURP'
-        : errSocio.message.includes('escalafon') ? 'El número de escalafón ya está asignado'
+  // Alta transaccional: socio + dirección + contacto + concesión en una
+  // sola transacción vía RPC. Si algo falla, no queda nada a medias.
+  const { data, error } = await sb.rpc(
+    'crear_socio_completo' as never,
+    { payload: parsed.data } as never
+  );
+
+  if (error) {
+    const e = error as { code?: string; message?: string };
+    if (e.code === '23505') {
+      const msg = e.message?.includes('rfc') ? 'Ya existe un socio con ese RFC'
+        : e.message?.includes('curp') ? 'Ya existe un socio con esa CURP'
+        : e.message?.includes('escalafon') ? 'El número de escalafón ya está asignado'
+        : e.message?.includes('numero_concesion') ? 'Ya existe una concesión con ese número'
         : 'Ya existe un registro con esos datos';
       return { ok: false, error: msg };
     }
-    return { ok: false, error: errSocio?.message ?? 'No se pudo crear el socio' };
-  }
-  const socioId = (newSocio as { id: string }).id;
-
-  // 2) Dirección (opcional)
-  if (direccion && (direccion.calle || direccion.colonia || direccion.municipio)) {
-    const { error: errDir } = await sb
-      .from('socios_direcciones')
-      .insert({ socio_id: socioId, ...direccion } as never);
-    if (errDir) console.error('[crearSocio] dirección:', errDir.message);
-  }
-
-  // 3) Contacto (opcional)
-  if (contacto && (contacto.telefono_movil || contacto.telefono_fijo || contacto.email)) {
-    const { error: errCon } = await sb
-      .from('socios_contactos')
-      .insert({
-        socio_id: socioId,
-        telefono_movil: contacto.telefono_movil || null,
-        telefono_fijo: contacto.telefono_fijo || null,
-        email: contacto.email || null,
-      } as never);
-    if (errCon) console.error('[crearSocio] contacto:', errCon.message);
-  }
-
-  // 4) Concesión (opcional)
-  if (concesion?.numero_concesion) {
-    const { error: errCon } = await sb
-      .from('concesiones')
-      .insert({
-        numero_concesion: concesion.numero_concesion,
-        socio_id: socioId,
-        sitio_id: concesion.sitio_id ?? null,
-        taxi_numero: concesion.taxi_numero ?? null,
-        tipo: 'CONCESION',
-        estado: 'VIGENTE',
-      } as never);
-    if (errCon) {
-      // Socio se creó OK pero la concesión falló — informar pero no rollback
-      console.error('[crearSocio] concesión:', errCon.message);
-      revalidatePath('/padron');
-      return {
-        ok: false,
-        error: `Socio creado, pero la concesión falló: ${errCon.message}. Agrégala desde el expediente.`,
-      };
-    }
+    return { ok: false, error: e.message ?? 'No se pudo crear el socio' };
   }
 
   revalidatePath('/padron');
   revalidatePath('/flota');
-  return { ok: true, socioId };
+  return { ok: true, socioId: data as unknown as string };
 }

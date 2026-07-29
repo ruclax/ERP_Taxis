@@ -24,6 +24,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq('user_id', user.id)
     .single() as { data: PerfilRow | null };
 
+  // Catálogo de módulos por rol desde la BD (editable en el admin → la web lo respeta).
+  // `expediente` en la BD es un sub-permiso de `padron` (los expedientes viven bajo /padron).
+  const { data: rolesCatalogo } = await supabase
+    .from('roles')
+    .select('codigo, modulos_acceso') as { data: { codigo: string; modulos_acceso: unknown }[] | null };
+
+  const modulosPorRol: Record<string, string[]> = {};
+  for (const r of rolesCatalogo ?? []) {
+    const mods = Array.isArray(r.modulos_acceso) ? (r.modulos_acceso as string[]) : [];
+    modulosPorRol[r.codigo] = [...new Set(mods.map((m) => (m === 'expediente' ? 'padron' : m)))];
+  }
+
   const rolesArr = roles ?? [];
   const esSuperadmin = rolesArr.some((r) => r.rol_codigo === 'superadmin');
 
@@ -31,6 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <AppFrame
       nombreDisplay={perfil?.nombre_display ?? user.email ?? ''}
       esSuperadmin={esSuperadmin}
+      modulosPorRol={modulosPorRol}
       roles={rolesArr.map((r) => ({
         rolCodigo: r.rol_codigo as never,
         scopeSitioId: r.scope_sitio_id,

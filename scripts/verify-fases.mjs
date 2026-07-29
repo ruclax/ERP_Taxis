@@ -241,6 +241,49 @@ await check('Función superadmin bypass existe', async () => {
   return r[0].n === 1;
 });
 
+sec('FASE 3 — Expediente Digital Centralizado');
+
+await check('Tabla `documentos` existe', async () => {
+  const r = await q(`select count(*)::int as n from information_schema.tables
+    where table_schema='public' and table_name='documentos'`);
+  return r[0].n === 1;
+});
+
+await check('Enum `tipo_documento` con sus 9 valores', async () => {
+  const r = await q(`select count(*)::int as n from pg_enum e
+    join pg_type t on t.oid=e.enumtypid where t.typname='tipo_documento'`);
+  return r[0].n === 9 ? '9 tipos (LICENCIA, POLIZA, TITULO_CONCESION, …)' : false;
+});
+
+await check('CHECK de dueño único (polimórfico)', async () => {
+  const r = await q(`select count(*)::int as n from pg_constraint
+    where conname='documentos_un_solo_dueno'`);
+  return r[0].n === 1;
+});
+
+await check('RLS habilitado en `documentos`', async () => {
+  const r = await q(`select relrowsecurity from pg_class where relname='documentos'`);
+  return r[0].relrowsecurity === true;
+});
+
+await check('`documentos` con 4 políticas RLS (select/insert/update/delete)', async () => {
+  const r = await q(`select count(*)::int as n from pg_policies
+    where schemaname='public' and tablename='documentos'`);
+  return r[0].n === 4 ? `${r[0].n} políticas` : false;
+});
+
+await check('Bucket privado `expedientes` en Storage', async () => {
+  const r = await q(`select public, file_size_limit from storage.buckets where id='expedientes'`);
+  if (r.length === 0) return false;
+  return r[0].public === false ? `privado · límite ${r[0].file_size_limit} bytes` : false;
+});
+
+await check('Políticas de `storage.objects` para el bucket', async () => {
+  const r = await q(`select count(*)::int as n from pg_policies
+    where schemaname='storage' and tablename='objects' and policyname like 'expedientes%'`);
+  return r[0].n === 4 ? `${r[0].n} políticas` : false;
+});
+
 await client.end();
 
 // ═════════════════════════════════════════════

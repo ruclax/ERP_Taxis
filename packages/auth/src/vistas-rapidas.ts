@@ -32,6 +32,13 @@ export const VISTAS_PADRON: Record<RolCodigo | 'superadmin', VistaRapida[]> = {
     { id: 'soc-tran', label: 'En transición', icon: 'Repeat', href: '/padron?cat=tran' },
     { id: 'sin-rfc', label: 'Sin RFC capturado', icon: 'AlertCircle', tone: 'warn', href: '/padron?firma=pendiente' },
   ],
+  admin_plataforma: [
+    { id: 'todos', label: 'Todos los socios', icon: 'Users', href: '/padron' },
+    { id: 'firma-pendiente', label: 'Pendientes de firma', icon: 'PenLine', tone: 'warn', href: '/padron?firma=pendiente' },
+    { id: 'fallecidos', label: 'Marcados como fallecidos', icon: 'Cross', tone: 'accent', href: '/padron?estatus=FALLECIDO' },
+    { id: 'soc-veint', label: '20+ años de antigüedad', icon: 'Award', tone: 'success', href: '/padron?cat=veint' },
+    { id: 'soc-tran', label: 'En transición', icon: 'Repeat', href: '/padron?cat=tran' },
+  ],
   sec_general: [
     { id: 'todos', label: 'Todos los socios', icon: 'Users', href: '/padron' },
     { id: 'activos', label: 'Solo activos', icon: 'CheckCircle', tone: 'success', href: '/padron?estatus=ACTIVO' },
@@ -75,6 +82,13 @@ export const VISTAS_PADRON: Record<RolCodigo | 'superadmin', VistaRapida[]> = {
 // ── FLOTA VEHICULAR ──
 export const VISTAS_FLOTA: Record<RolCodigo | 'superadmin', VistaRapida[]> = {
   superadmin: [
+    { id: 'todas', label: 'Todas las unidades', icon: 'Car', href: '/flota' },
+    { id: 'activas', label: 'En operación', icon: 'CheckCircle', tone: 'success', href: '/flota?estatus=ACTIVO' },
+    { id: 'fuera', label: 'Fuera del sindicato', icon: 'CarOff', tone: 'warn', href: '/flota?estatus=FUERA_SINDICATO' },
+    { id: 'siniestradas', label: 'Siniestradas', icon: 'AlertTriangle', tone: 'accent', href: '/flota?estatus=SINIESTRADO' },
+    { id: 'independientes', label: 'Independientes', icon: 'UserMinus', href: '/flota?indep=1' },
+  ],
+  admin_plataforma: [
     { id: 'todas', label: 'Todas las unidades', icon: 'Car', href: '/flota' },
     { id: 'activas', label: 'En operación', icon: 'CheckCircle', tone: 'success', href: '/flota?estatus=ACTIVO' },
     { id: 'fuera', label: 'Fuera del sindicato', icon: 'CarOff', tone: 'warn', href: '/flota?estatus=FUERA_SINDICATO' },
