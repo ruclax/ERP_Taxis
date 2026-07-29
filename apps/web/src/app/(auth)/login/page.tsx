@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getBrowserSupabase } from '@erp/db/client';
 import { Button, Card, CardBody, Input } from '@erp/ui/primitives';
 import { Lock, Mail } from 'lucide-react';
@@ -71,6 +72,9 @@ export default function LoginPage() {
               <Button type="submit" disabled={loading} size="lg">
                 {loading ? 'Iniciando sesión…' : 'Iniciar sesión'}
               </Button>
+              <Link href="/recuperar" className="text-center text-sm text-slate-500 hover:text-slate-700">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </form>
           </CardBody>
         </Card>

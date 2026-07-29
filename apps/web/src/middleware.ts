@@ -26,8 +26,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
+  // Rutas que redirigen a /dashboard si YA hay sesión
   const isAuthRoute = pathname.startsWith('/login');
-  const isPublic = isAuthRoute || pathname.startsWith('/_next') || pathname.startsWith('/api/health');
+  // Flujo de recuperación: público, pero NO redirige aunque exista sesión de recovery
+  const isRecovery = pathname.startsWith('/recuperar') || pathname.startsWith('/reset-password');
+  const isPublic = isAuthRoute || isRecovery || pathname.startsWith('/_next') || pathname.startsWith('/api/health');
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
