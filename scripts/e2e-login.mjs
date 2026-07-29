@@ -14,8 +14,8 @@ for (const line of envFile.split(/\r?\n/)) {
 
 const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const EMAIL = 'daniel.isaias.st@gmail.com';
-const PASSWORD = 'f4bwAVyqEH7ge9YX';
+const EMAIL = env.VERIFY_EMAIL ?? env.SUPERADMIN_EMAIL ?? 'daniel.isaias.st@gmail.com';
+const PASSWORD = env.VERIFY_PASSWORD ?? '';  // credencial fuera del código; configúrala en .env.local
 
 const projectRef = SUPABASE_URL.match(/https:\/\/([\w-]+)\.supabase\.co/)[1];
 
@@ -182,6 +182,10 @@ const RUTAS_ADMIN = [
 
 (async () => {
   console.log(`${COLORS.cyan}E2E test — login y recorrido${COLORS.reset}`);
+  if (!PASSWORD) {
+    warn('VERIFY_PASSWORD no configurada en .env.local — omitiendo el recorrido autenticado.');
+    return;
+  }
   info(`Email: ${EMAIL}  · Project: ${projectRef}`);
 
   let totalErr = 0;

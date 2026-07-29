@@ -17,8 +17,8 @@ for (const l of envFile.split(/\r?\n/)) {
 const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const DB_URL = env.DATABASE_URL;
-const EMAIL = 'daniel.isaias.st@gmail.com';
-const PASSWORD = 'f4bwAVyqEH7ge9YX';
+const EMAIL = env.VERIFY_EMAIL ?? env.SUPERADMIN_EMAIL ?? 'daniel.isaias.st@gmail.com';
+const PASSWORD = env.VERIFY_PASSWORD ?? '';  // credencial fuera del código; configúrala en .env.local
 const projectRef = SB_URL.match(/https:\/\/([\w-]+)\.supabase\.co/)[1];
 
 const C = { reset: '\x1b[0m', green: '\x1b[32m', red: '\x1b[31m', yellow: '\x1b[33m', cyan: '\x1b[36m', dim: '\x1b[2m', bold: '\x1b[1m' };
@@ -88,8 +88,8 @@ await check('Categorías sindicales (SOC_ACT / VEINT / TRAN)', async () => {
 
 await check('Firma actual recabada vs pendiente', async () => {
   const r = await q(`select
-    count(*) filter (where firma_actual = 'RECABADA')::int as recabada,
-    count(*) filter (where firma_actual = 'PENDIENTE')::int as pendiente
+    count(*) filter (where firma_actual = true)::int as recabada,
+    count(*) filter (where firma_actual = false)::int as pendiente
     from socios`);
   return `RECABADA:${r[0].recabada} · PENDIENTE:${r[0].pendiente}`;
 });
@@ -291,6 +291,15 @@ await client.end();
 // ═════════════════════════════════════════════
 
 sec('Servidor web — respuestas HTTP autenticadas');
+
+if (!PASSWORD) {
+  warn('VERIFY_PASSWORD no configurada en .env.local — se omiten las pruebas HTTP autenticadas.');
+  console.log(`\n${C.bold}━━━ RESUMEN (solo BD) ━━━${C.reset}`);
+  console.log(`  ${C.green}✓${C.reset} ${totalOk} verificaciones exitosas`);
+  if (totalWarn > 0) console.log(`  ${C.yellow}⚠${C.reset} ${totalWarn} advertencias`);
+  if (totalFail > 0) console.log(`  ${C.red}✗${C.reset} ${totalFail} fallos`);
+  process.exit(totalFail > 0 ? 1 : 0);
+}
 
 const tokens = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
   method: 'POST',
