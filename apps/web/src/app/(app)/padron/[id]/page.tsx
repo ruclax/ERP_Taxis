@@ -57,57 +57,35 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
         <ArrowLeft size={14} /> Volver al padrón
       </Link>
 
-      {/* Ficha de identidad */}
-      <Card>
-        <CardBody>
-          <div className="flex flex-col gap-5 md:flex-row md:items-start">
-            <div className="flex h-28 w-28 shrink-0 items-center justify-center self-center rounded-2xl bg-slate-100 text-3xl font-bold text-slate-400 md:self-start">
-              {socio.nombre_completo.split(' ').slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-bold ink">{socio.nombre_completo}</h2>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-                    <span className="mono rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
-                      {socio.codigo_agremiado}
-                    </span>
-                    <span className="text-slate-500">
-                      <span className="label-erp">Tipo:</span> {socio.tipo_socio}
-                    </span>
-                    {socio.escalafon_numero != null && socio.tipo_escalafon !== 'NINGUNO' && (
-                      <Badge tone={socio.tipo_escalafon === 'ASPIRANTE' ? 'warn' : 'info'}>
-                        {socio.tipo_escalafon === 'ASPIRANTE' ? 'Aspirante' : 'Concesionario'} #{socio.escalafon_numero}
-                      </Badge>
-                    )}
-                    <SocioEstatusPill estatus={socio.estatus} />
-                  </div>
-                </div>
-                <EditarSocioModal socioId={id} socio={socioEditable(socio)} />
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-                <Field label="RFC" value={socio.rfc} mono />
-                <Field label="CURP" value={socio.curp} mono />
-                <Field label="Nacimiento" value={fmtFechaCorta(socio.fecha_nacimiento)} />
-                <Field label="Ingreso" value={fmtFechaCorta(socio.fecha_ingreso)} />
-                <Field label="Antigüedad" value={antiguedadTexto(socio.fecha_ingreso)} />
-                <Field label="Turno" value={socio.turno ?? '—'} />
-                <Field label="Firma actual" value={socio.firma_actual ? 'Sí' : 'No'} />
-                <Field label="Estado civil" value={socio.estado_civil ?? '—'} />
-                <Field label="Ocupación" value={socio.ocupacion ?? '—'} />
-              </div>
-
-              {/* Categorías sindicales */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                {socio.soc_act && <Badge tone="success">SOC_ACT</Badge>}
-                {socio.soc_veint && <Badge tone="warn">SOC_VEINT (20+ años)</Badge>}
-                {socio.soc_tran && <Badge tone="info">SOC_TRAN</Badge>}
-              </div>
-            </div>
+      {/* Encabezado compacto — identidad siempre visible para dar contexto */}
+      <div className="flex flex-wrap items-center gap-4">
+        {socio.foto_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={socio.foto_url} alt="" className="h-16 w-16 shrink-0 rounded-2xl object-cover" />
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-xl font-bold text-slate-400">
+            {socio.nombre_completo.split(' ').slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()}
           </div>
-        </CardBody>
-      </Card>
+        )}
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-2xl font-bold ink">{socio.nombre_completo}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+            <span className="mono rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
+              {socio.codigo_agremiado}
+            </span>
+            <span className="text-slate-500">
+              <span className="label-erp">Tipo:</span> {socio.tipo_socio}
+            </span>
+            {socio.escalafon_numero != null && socio.tipo_escalafon !== 'NINGUNO' && (
+              <Badge tone={socio.tipo_escalafon === 'ASPIRANTE' ? 'warn' : 'info'}>
+                {socio.tipo_escalafon === 'ASPIRANTE' ? 'Aspirante' : 'Concesionario'} #{socio.escalafon_numero}
+              </Badge>
+            )}
+            <SocioEstatusPill estatus={socio.estatus} />
+          </div>
+        </div>
+        <EditarSocioModal socioId={id} socio={socioEditable(socio)} />
+      </div>
 
       {/* Detalle del expediente en pestañas */}
       <ExpedienteTabs
@@ -118,6 +96,27 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
         }}
         general={
           <>
+            <Card>
+              <CardHeader title="Datos personales" />
+              <CardBody>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <Field label="RFC" value={socio.rfc} mono />
+                  <Field label="CURP" value={socio.curp} mono />
+                  <Field label="Nacimiento" value={fmtFechaCorta(socio.fecha_nacimiento)} />
+                  <Field label="Ingreso" value={fmtFechaCorta(socio.fecha_ingreso)} />
+                  <Field label="Antigüedad" value={antiguedadTexto(socio.fecha_ingreso)} />
+                  <Field label="Turno" value={socio.turno ?? '—'} />
+                  <Field label="Firma actual" value={socio.firma_actual ? 'Sí' : 'No'} />
+                  <Field label="Estado civil" value={socio.estado_civil ?? '—'} />
+                  <Field label="Ocupación" value={socio.ocupacion ?? '—'} />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {socio.soc_act && <Badge tone="success">SOC_ACT</Badge>}
+                  {socio.soc_veint && <Badge tone="warn">SOC_VEINT (20+ años)</Badge>}
+                  {socio.soc_tran && <Badge tone="info">SOC_TRAN</Badge>}
+                </div>
+              </CardBody>
+            </Card>
             <Card>
               <CardHeader title="Estatus y ciclo de vida" subtitle="Altas, bajas, reactivaciones y defunción con su historial." />
               <CardBody>
