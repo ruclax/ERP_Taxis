@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button, SearchBox,
-  VistasRapidas, FilterSidebar,
+  VistasRapidas, FilterSidebar, Drawer,
   type SearchBoxOption, type VistaRapidaItem, type FilterGroup,
 } from '@erp/ui/primitives';
 import { DataTable } from '@erp/ui/data';
@@ -12,7 +12,7 @@ import { useRecentSearches } from '@erp/ui/hooks';
 import {
   ExternalLink, X, CheckCircle2, Clock, Percent, HelpCircle,
   AlertTriangle, ShieldAlert, IdCard,
-  DollarSign, Car, MapPin, FileWarning, Calendar, AlertOctagon,
+  DollarSign, Car, MapPin, FileWarning, Calendar, AlertOctagon, SlidersHorizontal,
 } from 'lucide-react';
 import { fmtFechaCorta } from '@erp/shared/formatters';
 import { getBrowserSupabase } from '@erp/db/client';
@@ -92,6 +92,7 @@ export default function ChoferesView({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [filtros, setFiltros] = useState<Filtros>(initialFilters);
+  const [filtrosOpen, setFiltrosOpen] = useState(false);
   const isInitialMount = useRef(true);
   const { recents, add: addRecent, remove: removeRecent } = useRecentSearches('choferes');
 
@@ -320,18 +321,13 @@ export default function ChoferesView({
       {/* Alertas y atajos (barra compacta) */}
       <VistasRapidas variant="bar" items={vistas} />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr] lg:items-start">
-        <FilterSidebar
-          className="lg:sticky lg:top-4"
-          groups={filterGroups}
-          activeCount={activos}
-          onClearAll={limpiar}
-        />
-
-        <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Button variant="secondary" size="sm" iconLeft={<SlidersHorizontal size={15} />} onClick={() => setFiltrosOpen(true)}>
+            Filtros{activos > 0 ? ` (${activos})` : ''}
+          </Button>
           {hayFiltro && (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-secondary">Aplicados:</span>
+            <>
               {filtros.tipo && (
                 <Chip onRemove={() => setFiltro('tipo', '')}>
                   {filtros.tipo === 'CONCESIONARIO' ? 'Concesionarios'
@@ -350,8 +346,9 @@ export default function ChoferesView({
               <Button variant="ghost" size="sm" onClick={limpiar} iconLeft={<X size={14} />}>
                 Limpiar todo
               </Button>
-            </div>
+            </>
           )}
+        </div>
 
           <DataTable
             rows={initialChoferes}
@@ -457,7 +454,15 @@ export default function ChoferesView({
             </div>
           )}
         </div>
-      </div>
+
+      <Drawer open={filtrosOpen} onClose={() => setFiltrosOpen(false)} title="Filtros">
+        <FilterSidebar
+          embedded
+          groups={filterGroups}
+          activeCount={activos}
+          onClearAll={limpiar}
+        />
+      </Drawer>
     </div>
   );
 }

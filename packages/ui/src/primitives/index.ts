@@ -7,6 +7,7 @@ export * from './Popover';
 export * from './SearchBox';
 export * from './ConfirmDialog';
 export * from './Modal';
+export * from './Drawer';
 export * from './Wizard';
 export * from './VistasRapidas';
 export * from './FilterSidebar';

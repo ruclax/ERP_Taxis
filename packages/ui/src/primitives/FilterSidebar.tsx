@@ -37,6 +37,8 @@ export interface FilterSidebarProps {
   /** Total de filtros activos (para el badge "Limpiar X filtros") */
   activeCount?: number;
   className?: string;
+  /** Modo dentro de un contenedor externo (ej. Drawer): sin marco ni título propios. */
+  embedded?: boolean;
 }
 
 /**
@@ -46,10 +48,33 @@ export interface FilterSidebarProps {
  * - Cada opción es un label entero clickeable (mayor área de tap)
  * - Conteo entre paréntesis ayuda a anticipar resultados
  */
-export function FilterSidebar({ groups, onClearAll, activeCount = 0, className }: FilterSidebarProps) {
+export function FilterSidebar({ groups, onClearAll, activeCount = 0, className, embedded = false }: FilterSidebarProps) {
   // En móvil (< lg) los grupos se colapsan tras un botón para no empujar la
   // lista hacia abajo; en lg+ el panel está siempre visible.
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Modo embebido (dentro de un Drawer): solo los grupos + "Limpiar", sin marco.
+  if (embedded) {
+    return (
+      <div className={cn('flex flex-col gap-3', className)}>
+        {activeCount > 0 && onClearAll && (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="tap-target self-start rounded-md px-2.5 py-1 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          >
+            Limpiar {activeCount} {activeCount === 1 ? 'filtro' : 'filtros'}
+          </button>
+        )}
+        <div className="flex flex-col gap-2">
+          {groups.map((g) => (
+            <FilterGroupBlock key={g.id} group={g} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <aside
       className={cn('flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4', className)}

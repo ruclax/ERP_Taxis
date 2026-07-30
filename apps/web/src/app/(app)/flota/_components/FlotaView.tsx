@@ -4,13 +4,13 @@ import { useState, useTransition, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Badge, Button, SearchBox,
-  VistasRapidas, FilterSidebar,
+  VistasRapidas, FilterSidebar, Drawer,
   type SearchBoxOption, type VistaRapidaItem, type FilterGroup,
 } from '@erp/ui/primitives';
 import { DataTable, PolizaEstadoPill } from '@erp/ui/data';
 import { useRecentSearches } from '@erp/ui/hooks';
 import {
-  X, Car, CheckCircle, CarFront, AlertTriangle, UserMinus, Tag, CircleSlash,
+  X, Car, CheckCircle, CarFront, AlertTriangle, UserMinus, Tag, CircleSlash, SlidersHorizontal,
 } from 'lucide-react';
 import { fmtFechaCorta } from '@erp/shared/formatters';
 import { getBrowserSupabase } from '@erp/db/client';
@@ -67,6 +67,7 @@ export default function FlotaView({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [filtros, setFiltros] = useState<Filtros>(initialFilters);
+  const [filtrosOpen, setFiltrosOpen] = useState(false);
   const isInitialMount = useRef(true);
   const { recents, add: addRecent, remove: removeRecent } = useRecentSearches('flota');
 
@@ -240,18 +241,13 @@ export default function FlotaView({
       {/* Filtros rápidos (barra compacta) */}
       <VistasRapidas variant="bar" items={vistasItems} />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr] lg:items-start">
-        <FilterSidebar
-          className="lg:sticky lg:top-4"
-          groups={filterGroups}
-          activeCount={filtrosActivos}
-          onClearAll={limpiarFiltros}
-        />
-
-        <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Button variant="secondary" size="sm" iconLeft={<SlidersHorizontal size={15} />} onClick={() => setFiltrosOpen(true)}>
+            Filtros{filtrosActivos > 0 ? ` (${filtrosActivos})` : ''}
+          </Button>
           {hayFiltro && (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-secondary">Aplicados:</span>
+            <>
               {filtros.estatus && <Chip onRemove={() => setFiltro('estatus', '')}>Estado: {filtros.estatus}</Chip>}
               {filtros.marca && <Chip onRemove={() => setFiltro('marca', '')}>Marca: {filtros.marca}</Chip>}
               {filtros.indep === '1' && <Chip onRemove={() => setFiltro('indep', '')}>Independientes</Chip>}
@@ -259,8 +255,9 @@ export default function FlotaView({
               <Button variant="ghost" size="sm" onClick={limpiarFiltros} iconLeft={<X size={14} />}>
                 Limpiar todo
               </Button>
-            </div>
+            </>
           )}
+        </div>
 
           <DataTable
             rows={initialVehiculos}
@@ -377,7 +374,15 @@ export default function FlotaView({
             </div>
           )}
         </div>
-      </div>
+
+      <Drawer open={filtrosOpen} onClose={() => setFiltrosOpen(false)} title="Filtros">
+        <FilterSidebar
+          embedded
+          groups={filterGroups}
+          activeCount={filtrosActivos}
+          onClearAll={limpiarFiltros}
+        />
+      </Drawer>
     </div>
   );
 }
