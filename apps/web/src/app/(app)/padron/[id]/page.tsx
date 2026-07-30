@@ -6,7 +6,7 @@ import { listarDocumentosExpediente, type Documento } from '@erp/db/queries/docu
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
 import { SocioEstatusPill, ConcesionEstadoPill } from '@erp/ui/data';
 import { fmtFechaCorta, antiguedadTexto } from '@erp/shared/formatters';
-import { ArrowLeft } from 'lucide-react';
+import { ChevronRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import ChoferesPanel from './_components/ChoferesPanel';
 import DocumentosPanel from './_components/DocumentosPanel';
@@ -51,40 +51,62 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
     historialEstatus = [];
   }
 
+  let adeudosPend = 0;
+  try {
+    const { count } = await supabase
+      .from('adeudos')
+      .select('id', { count: 'exact', head: true })
+      .eq('socio_id', id)
+      .gt('monto_pendiente', 0);
+    adeudosPend = count ?? 0;
+  } catch { adeudosPend = 0; }
+
+  const alertas = alertasDe(socio, adeudosPend);
+
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/padron" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 w-fit">
-        <ArrowLeft size={14} /> Volver al padrón
-      </Link>
+      <nav className="flex items-center gap-1.5 text-sm text-slate-500">
+        <Link href="/padron" className="hover:text-slate-700">Padrón</Link>
+        <ChevronRight size={14} className="text-slate-400" />
+        <span className="truncate font-medium text-slate-700">{socio.nombre_completo}</span>
+      </nav>
 
-      {/* Encabezado compacto — identidad siempre visible para dar contexto */}
-      <div className="flex flex-wrap items-center gap-4">
-        {socio.foto_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={socio.foto_url} alt="" className="h-16 w-16 shrink-0 rounded-2xl object-cover" />
-        ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-xl font-bold text-slate-400">
-            {socio.nombre_completo.split(' ').slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()}
+      {/* Encabezado compacto y sticky — identidad + alertas siempre visibles */}
+      <div className="sticky top-0 z-20 -mx-4 border-b border-slate-200/70 bg-slate-50/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+        <div className="flex flex-wrap items-center gap-4">
+          {socio.foto_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={socio.foto_url} alt="" className="h-14 w-14 shrink-0 rounded-2xl object-cover" />
+          ) : (
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-lg font-bold text-slate-400">
+              {socio.nombre_completo.split(' ').slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-xl font-bold ink">{socio.nombre_completo}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+              <span className="mono rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
+                {socio.codigo_agremiado}
+              </span>
+              <span className="text-slate-500"><span className="label-erp">Tipo:</span> {socio.tipo_socio}</span>
+              {socio.escalafon_numero != null && socio.tipo_escalafon !== 'NINGUNO' && (
+                <Badge tone={socio.tipo_escalafon === 'ASPIRANTE' ? 'warn' : 'info'}>
+                  {socio.tipo_escalafon === 'ASPIRANTE' ? 'Aspirante' : 'Concesionario'} #{socio.escalafon_numero}
+                </Badge>
+              )}
+              <SocioEstatusPill estatus={socio.estatus} />
+              {alertas.map((a) => (
+                <span
+                  key={a.label}
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${a.tone === 'accent' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}
+                >
+                  <AlertTriangle size={11} /> {a.label}
+                </span>
+              ))}
+            </div>
           </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-bold ink">{socio.nombre_completo}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-            <span className="mono rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
-              {socio.codigo_agremiado}
-            </span>
-            <span className="text-slate-500">
-              <span className="label-erp">Tipo:</span> {socio.tipo_socio}
-            </span>
-            {socio.escalafon_numero != null && socio.tipo_escalafon !== 'NINGUNO' && (
-              <Badge tone={socio.tipo_escalafon === 'ASPIRANTE' ? 'warn' : 'info'}>
-                {socio.tipo_escalafon === 'ASPIRANTE' ? 'Aspirante' : 'Concesionario'} #{socio.escalafon_numero}
-              </Badge>
-            )}
-            <SocioEstatusPill estatus={socio.estatus} />
-          </div>
+          <EditarSocioModal socioId={id} socio={socioEditable(socio)} />
         </div>
-        <EditarSocioModal socioId={id} socio={socioEditable(socio)} />
       </div>
 
       {/* Detalle del expediente en pestañas */}
@@ -343,6 +365,44 @@ function socioEditable(socio: Record<string, unknown>): SocioEditable {
     soc_tran: Boolean(socio.soc_tran),
     firma_actual: Boolean(socio.firma_actual),
   };
+}
+
+function diasHasta(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (isNaN(d.getTime())) return null;
+  return Math.floor((d.getTime() - hoy.getTime()) / 86_400_000);
+}
+
+/** Chips de alerta del socio: licencia/póliza por vencer o vencida, y adeudos pendientes. */
+function alertasDe(socio: Record<string, unknown>, adeudosPend: number): Array<{ tone: 'accent' | 'warn'; label: string }> {
+  const out: Array<{ tone: 'accent' | 'warn'; label: string }> = [];
+
+  const lics = (socio.socios_licencia_conducir as Array<Record<string, unknown>> | null) ?? [];
+  const lic = lics.find((x) => x.es_actual === true) ?? lics[0];
+  const dLic = diasHasta(lic?.fecha_vencimiento as string | null);
+  if (dLic != null) {
+    if (dLic < 0) out.push({ tone: 'accent', label: 'Licencia vencida' });
+    else if (dLic <= 30) out.push({ tone: 'warn', label: `Licencia vence en ${dLic}d` });
+  }
+
+  const concs = (socio.concesiones as Array<Record<string, unknown>> | null) ?? [];
+  let polVencida = false, polPorVencer = false;
+  for (const c of concs) {
+    for (const v of ((c.vehiculos as Array<Record<string, unknown>>) ?? [])) {
+      for (const p of ((v.polizas as Array<Record<string, unknown>>) ?? [])) {
+        if (p.estado === 'VENCIDA') polVencida = true;
+        else if (p.estado === 'POR_VENCER') polPorVencer = true;
+      }
+    }
+  }
+  if (polVencida) out.push({ tone: 'accent', label: 'Póliza vencida' });
+  else if (polPorVencer) out.push({ tone: 'warn', label: 'Póliza por vencer' });
+
+  if (adeudosPend > 0) out.push({ tone: 'accent', label: `${adeudosPend} adeudo${adeudosPend > 1 ? 's' : ''}` });
+
+  return out;
 }
 
 function Field({ label, value, mono }: { label: string; value: string | null | undefined; mono?: boolean }) {

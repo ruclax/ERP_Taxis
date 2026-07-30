@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tabs } from '@erp/ui/primitives';
 
-type TabKey = 'general' | 'concesiones' | 'documentos' | 'beneficiarios' | 'identificaciones';
+const TAB_KEYS = ['general', 'concesiones', 'documentos', 'beneficiarios', 'identificaciones'] as const;
+type TabKey = (typeof TAB_KEYS)[number];
 
 export default function ExpedienteTabs({
   general,
@@ -20,7 +22,21 @@ export default function ExpedienteTabs({
   identificaciones: ReactNode;
   counts?: { concesiones?: number; documentos?: number; beneficiarios?: number };
 }) {
-  const [tab, setTab] = useState<TabKey>('general');
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlTab = searchParams.get('tab') as TabKey | null;
+  const [tab, setTab] = useState<TabKey>(urlTab && TAB_KEYS.includes(urlTab) ? urlTab : 'general');
+
+  function cambiar(next: TabKey) {
+    setTab(next);
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === 'general') params.delete('tab');
+    else params.set('tab', next);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
+
   const panels: Record<TabKey, ReactNode> = {
     general,
     concesiones,
@@ -33,7 +49,7 @@ export default function ExpedienteTabs({
     <div className="flex flex-col gap-5">
       <Tabs
         value={tab}
-        onChange={setTab}
+        onChange={cambiar}
         scrollable
         options={[
           { value: 'general', label: 'General' },
