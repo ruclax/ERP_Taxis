@@ -16,6 +16,7 @@ import BeneficiariosPanel, { type Beneficiario } from './_components/Beneficiari
 import IdentificacionesPanel, { type Licencia, type Credencial } from './_components/IdentificacionesPanel';
 import EstatusPanel, { type HistorialItem } from './_components/EstatusPanel';
 import FotoSocio from './_components/FotoSocio';
+import AccionesMenu from './_components/AccionesMenu';
 import VehiculoPolizaPanel, { type Vehiculo, type Poliza } from './_components/VehiculoPolizaPanel';
 import ExpedienteTabs from './_components/ExpedienteTabs';
 
@@ -103,7 +104,10 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
               ))}
             </div>
           </div>
-          <EditarSocioModal socioId={id} socio={socioEditable(socio)} />
+          <div className="flex items-center gap-2">
+            <AccionesMenu />
+            <EditarSocioModal socioId={id} socio={socioEditable(socio)} />
+          </div>
         </div>
       </div>
 

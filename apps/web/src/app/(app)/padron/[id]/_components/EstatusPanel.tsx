@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Modal, Button } from '@erp/ui/primitives';
 import { SocioEstatusPill } from '@erp/ui/data';
 import { RefreshCw, ArrowRight } from 'lucide-react';
@@ -33,7 +33,22 @@ export default function EstatusPanel({
   historial: HistorialItem[];
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+
+  // Acción directa desde el menú del header: ?do=estatus abre el modal.
+  useEffect(() => {
+    if (searchParams.get('do') === 'estatus') {
+      setOpen(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('do');
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }
+    // Solo al montar / cambiar el param
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <div className="flex flex-col gap-4">

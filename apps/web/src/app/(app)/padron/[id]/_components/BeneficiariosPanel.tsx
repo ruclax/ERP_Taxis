@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Modal, Button, Input, Badge, ConfirmDialog } from '@erp/ui/primitives';
 import { UserPlus, Pencil, Trash2 } from 'lucide-react';
 import { guardarBeneficiarioAction, eliminarBeneficiarioAction } from '../actions';
@@ -26,10 +26,25 @@ export default function BeneficiariosPanel({
   beneficiarios: Beneficiario[];
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [editing, setEditing] = useState<Beneficiario | 'nuevo' | null>(null);
   const [aEliminar, setAEliminar] = useState<Beneficiario | null>(null);
   const [borrando, setBorrando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Acción directa desde el menú del header: ?do=beneficiario abre "nuevo".
+  useEffect(() => {
+    if (searchParams.get('do') === 'beneficiario') {
+      setError(null);
+      setEditing('nuevo');
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('do');
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function confirmarEliminar() {
     if (!aEliminar) return;
