@@ -15,12 +15,11 @@
     "declaration": false,
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": false,
-    "baseUrl": ".",
     "paths": {
-      "@erp/shared/*": ["packages/shared/*"],
-      "@erp/db/*": ["packages/db/*"],
-      "@erp/auth/*": ["packages/auth/*"],
-      "@erp/ui/*": ["packages/ui/*"]
+      "@erp/shared/*": ["./packages/shared/*"],
+      "@erp/db/*": ["./packages/db/*"],
+      "@erp/auth/*": ["./packages/auth/*"],
+      "@erp/ui/*": ["./packages/ui/*"]
     }
   },
   "include": ["scripts/**/*.ts"],
