@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { cn } from '../cn';
 
 export interface VistaRapidaItem {
@@ -55,8 +55,10 @@ export interface VistasRapidasProps {
   className?: string;
   /** Etiqueta opcional encima de la grilla */
   title?: string;
-  /** 'grid' = tarjetas grandes (default); 'bar' = pills en una fila (compacto) */
+  /** 'grid' = tarjetas grandes (default); 'bar' = pills compactas */
   variant?: 'grid' | 'bar';
+  /** Solo en variant 'bar': cuántas pills mostrar antes del "+N más". Default 5. */
+  maxVisible?: number;
 }
 
 /**
@@ -65,15 +67,22 @@ export interface VistasRapidasProps {
  * - estados visuales claros (color + borde + check)
  * - aria-pressed para lectores de pantalla
  */
-export function VistasRapidas({ items, className, title, variant = 'grid' }: VistasRapidasProps) {
+export function VistasRapidas({ items, className, title, variant = 'grid', maxVisible = 5 }: VistasRapidasProps) {
+  const [expanded, setExpanded] = useState(false);
   if (items.length === 0) return null;
 
-  // Variante compacta: pills en una fila con scroll horizontal
+  // Variante compacta: pills que envuelven; los menos usados se colapsan tras "+N más".
   if (variant === 'bar') {
+    const hayMas = items.length > maxVisible;
+    // Colapsado: primeras `maxVisible` + cualquier activa oculta (para no perder el estado)
+    const shown = !expanded && hayMas
+      ? [...items.slice(0, maxVisible), ...items.slice(maxVisible).filter((i) => i.active)]
+      : items;
+
     return (
       <section className={className} aria-label={title ?? 'Vistas rápidas'}>
         <div className="flex flex-wrap gap-2">
-          {items.map((item) => {
+          {shown.map((item) => {
             const tone = TONES[item.tone ?? 'default'];
             const isActive = !!item.active;
             const classes = cn(
@@ -103,6 +112,17 @@ export function VistasRapidas({ items, className, title, variant = 'grid' }: Vis
               <button key={item.id} type="button" onClick={item.onClick} aria-pressed={isActive} className={classes}>{inner}</button>
             );
           })}
+
+          {hayMas && (
+            <button
+              type="button"
+              onClick={() => setExpanded((e) => !e)}
+              aria-expanded={expanded}
+              className="inline-flex min-h-[40px] shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+            >
+              {expanded ? 'Ver menos' : `+${items.length - maxVisible} más`}
+            </button>
+          )}
         </div>
       </section>
     );
