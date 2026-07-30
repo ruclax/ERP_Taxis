@@ -47,25 +47,45 @@ export interface FilterSidebarProps {
  * - Conteo entre paréntesis ayuda a anticipar resultados
  */
 export function FilterSidebar({ groups, onClearAll, activeCount = 0, className }: FilterSidebarProps) {
+  // En móvil (< lg) los grupos se colapsan tras un botón para no empujar la
+  // lista hacia abajo; en lg+ el panel está siempre visible.
+  const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <aside
       className={cn('flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4', className)}
       aria-label="Filtros avanzados"
     >
       <div className="flex items-center justify-between gap-2 pb-2">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Filtros</h2>
-        {activeCount > 0 && onClearAll && (
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-700">
+          Filtros
+          {activeCount > 0 && (
+            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-800">
+              {activeCount}
+            </span>
+          )}
+        </h2>
+        <div className="flex items-center gap-1">
+          {activeCount > 0 && onClearAll && (
+            <button
+              type="button"
+              onClick={onClearAll}
+              className="tap-target rounded-md px-2.5 py-1 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            >
+              Limpiar {activeCount === 1 ? 'filtro' : 'filtros'}
+            </button>
+          )}
           <button
             type="button"
-            onClick={onClearAll}
-            className="tap-target rounded-md px-2.5 py-1 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-expanded={mobileOpen}
+            className="tap-target rounded-md px-2.5 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 lg:hidden"
           >
-            Limpiar {activeCount} {activeCount === 1 ? 'filtro' : 'filtros'}
+            {mobileOpen ? 'Ocultar' : 'Mostrar'}
           </button>
-        )}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className={cn('flex-col gap-2 lg:flex', mobileOpen ? 'flex' : 'hidden')}>
         {groups.map((g) => (
           <FilterGroupBlock key={g.id} group={g} />
         ))}
