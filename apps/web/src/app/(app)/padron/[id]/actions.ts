@@ -10,6 +10,7 @@ import {
 } from '@erp/db/queries/choferes';
 import {
   actualizarSocio,
+  actualizarFotoSocio,
   guardarDireccionActual,
   agregarContacto,
   eliminarContacto,
@@ -59,6 +60,30 @@ export async function actualizarSocioAction(
 
 // ── M2 bloque 2: dirección + contactos ──
 export type SimpleResult = { ok: true } | { ok: false; error: string };
+
+// ── Foto de perfil del socio ──
+export async function subirFotoAction(formData: FormData): Promise<SimpleResult> {
+  const file = formData.get('file') as File | null;
+  const socioId = (formData.get('socio_id') as string | null) ?? '';
+  if (!file || file.size === 0) return { ok: false, error: 'Selecciona una imagen' };
+  if (!socioId) return { ok: false, error: 'Falta el socio' };
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    return { ok: false, error: 'Formato no permitido (usa JPG, PNG o WebP)' };
+  }
+  if (file.size > 5 * 1024 * 1024) return { ok: false, error: 'La imagen supera 5 MB' };
+  try {
+    const sb = createSupabaseServer(await cookies());
+    const path = `socios/${socioId}`;
+    const { error: up } = await sb.storage.from('fotos').upload(path, file, { contentType: file.type, upsert: true });
+    if (up) return { ok: false, error: up.message };
+    const { data: pub } = sb.storage.from('fotos').getPublicUrl(path);
+    await actualizarFotoSocio(sb, socioId, `${pub.publicUrl}?v=${Date.now()}`);
+    revalidatePath(`/padron/${socioId}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e as { message?: string }).message ?? 'No se pudo subir la foto' };
+  }
+}
 
 export async function guardarDireccionAction(
   socioId: string,

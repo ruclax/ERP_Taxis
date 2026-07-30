@@ -85,6 +85,12 @@ export async function actualizarSocio(sb: SB, id: string, cambios: SocioUpdatabl
   if (error) throw error;
 }
 
+/** Actualiza la URL de la foto de perfil del socio. */
+export async function actualizarFotoSocio(sb: SB, id: string, fotoUrl: string | null) {
+  const { error } = await sb.from('socios').update({ foto_url: fotoUrl } as never).eq('id', id);
+  if (error) throw error;
+}
+
 // ── Dirección actual (M2 bloque 2) ──
 export type DireccionActual = {
   calle: string | null;

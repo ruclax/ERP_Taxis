@@ -15,6 +15,7 @@ import ContactoDomicilioPanel, { type Contacto, type Direccion } from './_compon
 import BeneficiariosPanel, { type Beneficiario } from './_components/BeneficiariosPanel';
 import IdentificacionesPanel, { type Licencia, type Credencial } from './_components/IdentificacionesPanel';
 import EstatusPanel, { type HistorialItem } from './_components/EstatusPanel';
+import FotoSocio from './_components/FotoSocio';
 import VehiculoPolizaPanel, { type Vehiculo, type Poliza } from './_components/VehiculoPolizaPanel';
 import ExpedienteTabs from './_components/ExpedienteTabs';
 
@@ -74,14 +75,11 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
       {/* Encabezado compacto y sticky — identidad + alertas siempre visibles */}
       <div className="sticky top-0 z-20 -mx-4 border-b border-slate-200/70 bg-slate-50/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
         <div className="flex flex-wrap items-center gap-4">
-          {socio.foto_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={socio.foto_url} alt="" className="h-14 w-14 shrink-0 rounded-2xl object-cover" />
-          ) : (
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-lg font-bold text-slate-400">
-              {socio.nombre_completo.split(' ').slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()}
-            </div>
-          )}
+          <FotoSocio
+            socioId={id}
+            fotoUrl={(socio.foto_url as string | null) ?? null}
+            iniciales={socio.nombre_completo.split(' ').slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()}
+          />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-bold ink">{socio.nombre_completo}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
