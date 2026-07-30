@@ -142,7 +142,7 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
           {(socio.concesiones ?? []).length === 0 ? (
             <p className="text-center text-sm text-slate-400 py-6">Sin concesiones</p>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4">
               {(socio.concesiones as unknown as Array<{
                 id: string;
                 numero_concesion: string;

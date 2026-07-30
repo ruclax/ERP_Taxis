@@ -50,6 +50,7 @@ export default function DocumentosPanel({
   const [viendo, setViendo] = useState<string | null>(null);
   const [aEliminar, setAEliminar] = useState<Documento | null>(null);
   const [eliminando, setEliminando] = useState(false);
+  const [mostrarForm, setMostrarForm] = useState(!compact);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -61,7 +62,10 @@ export default function DocumentosPanel({
     startTransition(async () => {
       const r = await subirDocumentoAction(fd);
       if (!r.ok) setError(r.error);
-      else formRef.current?.reset();
+      else {
+        formRef.current?.reset();
+        if (compact) setMostrarForm(false);
+      }
     });
   }
 
@@ -84,49 +88,66 @@ export default function DocumentosPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Formulario de subida */}
-      <form
-        ref={formRef}
-        onSubmit={onSubmit}
-        className="grid grid-cols-1 gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto]"
-      >
-        <div className="flex flex-col gap-1">
-          <label className="label-erp">Archivo (PDF, JPG, PNG, WebP · máx 15 MB)</label>
-          <input
-            type="file"
-            name="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            required
-            className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-slate-300"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="label-erp">Tipo de documento</label>
-          <select name="tipo" required defaultValue={defaultTipo ?? ''} className="h-9 rounded-md border border-slate-300 px-2 text-sm">
-            <option value="" disabled>Selecciona…</option>
-            {TIPOS.map((t) => (
-              <option key={t} value={t}>{TIPO_LABEL[t]}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-end">
-          <Button type="submit" size="sm" iconLeft={pending ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />} disabled={pending}>
-            {pending ? 'Subiendo…' : 'Subir'}
-          </Button>
-        </div>
-        {!compact && (
-          <>
-            <div className="flex flex-col gap-1 md:col-span-1">
-              <label className="label-erp">Título (opcional)</label>
-              <input name="titulo" type="text" placeholder="Ej. Licencia 2026" className="h-9 rounded-md border border-slate-300 px-2 text-sm" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="label-erp">Vigencia (opcional)</label>
-              <input name="vigencia" type="date" className="h-9 rounded-md border border-slate-300 px-2 text-sm" />
-            </div>
-          </>
-        )}
-      </form>
+      {/* En modo compacto el formulario se colapsa tras un botón para no saturar */}
+      {compact && !mostrarForm && (
+        <button
+          type="button"
+          onClick={() => { setError(null); setMostrarForm(true); }}
+          className="flex w-fit items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+        >
+          <Upload size={14} /> Subir documento
+        </button>
+      )}
+
+      {(mostrarForm || !compact) && (
+        <form
+          ref={formRef}
+          onSubmit={onSubmit}
+          className={`grid gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 ${compact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-[1fr_1fr_auto]'}`}
+        >
+          <div className="flex min-w-0 flex-col gap-1">
+            <label className="label-erp">Archivo (PDF, JPG, PNG, WebP · máx 15 MB)</label>
+            <input
+              type="file"
+              name="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              required
+              className="w-full min-w-0 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-slate-300"
+            />
+          </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <label className="label-erp">Tipo de documento</label>
+            <select name="tipo" required defaultValue={defaultTipo ?? ''} className="h-9 min-w-0 rounded-md border border-slate-300 px-2 text-sm">
+              <option value="" disabled>Selecciona…</option>
+              {TIPOS.map((t) => (
+                <option key={t} value={t}>{TIPO_LABEL[t]}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end gap-2">
+            <Button type="submit" size="sm" iconLeft={pending ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />} disabled={pending}>
+              {pending ? 'Subiendo…' : 'Subir'}
+            </Button>
+            {compact && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setMostrarForm(false)} disabled={pending}>
+                Cancelar
+              </Button>
+            )}
+          </div>
+          {!compact && (
+            <>
+              <div className="flex min-w-0 flex-col gap-1 md:col-span-1">
+                <label className="label-erp">Título (opcional)</label>
+                <input name="titulo" type="text" placeholder="Ej. Licencia 2026" className="h-9 min-w-0 rounded-md border border-slate-300 px-2 text-sm" />
+              </div>
+              <div className="flex min-w-0 flex-col gap-1">
+                <label className="label-erp">Vigencia (opcional)</label>
+                <input name="vigencia" type="date" className="h-9 min-w-0 rounded-md border border-slate-300 px-2 text-sm" />
+              </div>
+            </>
+          )}
+        </form>
+      )}
 
       {error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
