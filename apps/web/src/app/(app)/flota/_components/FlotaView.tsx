@@ -264,14 +264,7 @@ export default function FlotaView({
             rowKey={(v) => v.id}
             loading={pending && initialVehiculos.length === 0}
             empty={hayFiltro ? 'Sin resultados para los filtros actuales' : 'Sin vehículos registrados'}
-            onRowClick={(v) => {
-              const concRaw = (v as { concesiones?: unknown }).concesiones;
-              const c = Array.isArray(concRaw) ? concRaw[0] : concRaw;
-              const socRaw = c ? (c as { socios?: unknown }).socios : null;
-              const soc = Array.isArray(socRaw) ? socRaw[0] : socRaw;
-              const sid = soc ? (soc as { id?: string }).id : null;
-              if (sid) router.push(`/padron/${sid}`);
-            }}
+            onRowClick={(v) => router.push(`/flota/${v.id}`)}
             columns={[
               {
                 key: 'taxi', header: '# Económico',
