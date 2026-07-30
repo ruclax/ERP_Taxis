@@ -16,6 +16,7 @@ import BeneficiariosPanel, { type Beneficiario } from './_components/Beneficiari
 import IdentificacionesPanel, { type Licencia, type Credencial } from './_components/IdentificacionesPanel';
 import EstatusPanel, { type HistorialItem } from './_components/EstatusPanel';
 import VehiculoPolizaPanel, { type Vehiculo, type Poliza } from './_components/VehiculoPolizaPanel';
+import ExpedienteTabs from './_components/ExpedienteTabs';
 
 export default async function ExpedientePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -108,28 +109,43 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
         </CardBody>
       </Card>
 
-      {/* Estatus y ciclo de vida (M4) */}
-      <Card>
-        <CardHeader title="Estatus y ciclo de vida" subtitle="Altas, bajas, reactivaciones y defunción con su historial." />
-        <CardBody>
-          <EstatusPanel socioId={id} estatusActual={socio.estatus} historial={historialEstatus} />
-        </CardBody>
-      </Card>
-
-      {/* Contacto y domicilio (M2 bloque 2) */}
-      <Card>
-        <CardHeader title="Contacto y domicilio" />
-        <CardBody>
-          <ContactoDomicilioPanel
-            socioId={id}
-            direccion={direccionActual(socio)}
-            contactos={contactosDe(socio)}
-          />
-        </CardBody>
-      </Card>
-
-      {/* Concesiones */}
-      <Card>
+      {/* Detalle del expediente en pestañas */}
+      <ExpedienteTabs
+        counts={{
+          concesiones: (socio.concesiones as unknown[] | null)?.length ?? 0,
+          documentos: docsSocio.length,
+          beneficiarios: beneficiariosDe(socio).length,
+        }}
+        general={
+          <>
+            <Card>
+              <CardHeader title="Estatus y ciclo de vida" subtitle="Altas, bajas, reactivaciones y defunción con su historial." />
+              <CardBody>
+                <EstatusPanel socioId={id} estatusActual={socio.estatus} historial={historialEstatus} />
+              </CardBody>
+            </Card>
+            <Card>
+              <CardHeader title="Contacto y domicilio" />
+              <CardBody>
+                <ContactoDomicilioPanel
+                  socioId={id}
+                  direccion={direccionActual(socio)}
+                  contactos={contactosDe(socio)}
+                />
+              </CardBody>
+            </Card>
+            {socio.comentarios && (
+              <Card>
+                <CardHeader title="Comentarios del expediente" />
+                <CardBody>
+                  <p className="whitespace-pre-wrap text-sm text-slate-700">{socio.comentarios}</p>
+                </CardBody>
+              </Card>
+            )}
+          </>
+        }
+        concesiones={
+          <Card>
         <CardHeader
           title="Concesiones del socio"
           subtitle={
@@ -202,45 +218,38 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
         </CardBody>
       </Card>
 
-      {/* Identificaciones (M2 bloque 4) */}
-      <Card>
-        <CardHeader title="Identificaciones" subtitle="Licencia de conducir y credencial de elector." />
-        <CardBody>
-          <IdentificacionesPanel socioId={id} licencia={licenciaDe(socio)} credencial={credencialDe(socio)} />
-        </CardBody>
-      </Card>
-
-      {/* Beneficiarios (M2 bloque 3) */}
-      <Card>
-        <CardHeader
-          title="Beneficiarios"
-          subtitle="Cónyuge y designados oficiales para efectos de sucesión y paquete funerario."
-        />
-        <CardBody>
-          <BeneficiariosPanel socioId={id} beneficiarios={beneficiariosDe(socio)} />
-        </CardBody>
-      </Card>
-
-      {/* Documentos digitalizados (Expediente Digital — Fase 3) */}
-      <Card>
-        <CardHeader
-          title="Documentos"
-          subtitle="Licencias, pólizas, títulos y demás documentos digitalizados del socio."
-        />
-        <CardBody>
-          <DocumentosPanel owner={{ tipo: 'socio', id }} expedienteSocioId={id} documentos={docsSocio} />
-        </CardBody>
-      </Card>
-
-      {/* Comentarios libres */}
-      {socio.comentarios && (
-        <Card>
-          <CardHeader title="Comentarios del expediente" />
-          <CardBody>
-            <p className="whitespace-pre-wrap text-sm text-slate-700">{socio.comentarios}</p>
-          </CardBody>
-        </Card>
-      )}
+        }
+        identificaciones={
+          <Card>
+            <CardHeader title="Identificaciones" subtitle="Licencia de conducir y credencial de elector." />
+            <CardBody>
+              <IdentificacionesPanel socioId={id} licencia={licenciaDe(socio)} credencial={credencialDe(socio)} />
+            </CardBody>
+          </Card>
+        }
+        beneficiarios={
+          <Card>
+            <CardHeader
+              title="Beneficiarios"
+              subtitle="Cónyuge y designados oficiales para efectos de sucesión y paquete funerario."
+            />
+            <CardBody>
+              <BeneficiariosPanel socioId={id} beneficiarios={beneficiariosDe(socio)} />
+            </CardBody>
+          </Card>
+        }
+        documentos={
+          <Card>
+            <CardHeader
+              title="Documentos"
+              subtitle="Licencias, pólizas, títulos y demás documentos digitalizados del socio."
+            />
+            <CardBody>
+              <DocumentosPanel owner={{ tipo: 'socio', id }} expedienteSocioId={id} documentos={docsSocio} />
+            </CardBody>
+          </Card>
+        }
+      />
     </div>
   );
 }
