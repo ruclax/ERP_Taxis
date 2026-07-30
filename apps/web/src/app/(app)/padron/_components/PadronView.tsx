@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Card, CardBody, CardHeader, Button, SearchBox, VistasRapidas, FilterSidebar,
+  Button, SearchBox, VistasRapidas, FilterSidebar,
   type SearchBoxOption, type VistaRapidaItem, type FilterGroup,
 } from '@erp/ui/primitives';
 import { DataTable, SocioEstatusPill } from '@erp/ui/data';
@@ -252,51 +252,50 @@ export default function PadronView({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Encabezado + búsqueda */}
-      <Card>
-        <CardHeader
-          title="Padrón de Socios"
-          subtitle={
-            hayFiltro
-              ? `${initialSocios.length.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')} coinciden`
-              : `${total.toLocaleString('es-MX')} socios registrados`
-          }
-          action={
-            <Link
-              href="/padron/nuevo"
-              className="tap-target inline-flex items-center gap-2 rounded-lg bg-(--oxford) px-4 text-[15px] font-semibold text-white hover:bg-(--crit)"
-            >
-              <UserPlus size={18} /> Nuevo socio
-            </Link>
-          }
+      {/* Toolbar: título + acción + búsqueda (foco principal) */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-bold ink">Padrón de Socios</h1>
+            <p className="text-sm text-slate-500">
+              {hayFiltro
+                ? `${initialSocios.length.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')} coinciden`
+                : `${total.toLocaleString('es-MX')} socios registrados`}
+            </p>
+          </div>
+          <Link
+            href="/padron/nuevo"
+            className="tap-target inline-flex items-center gap-2 rounded-lg bg-(--oxford) px-4 py-2 text-[15px] font-semibold text-white hover:bg-(--crit)"
+          >
+            <UserPlus size={18} /> Nuevo socio
+          </Link>
+        </div>
+        <SearchBox
+          label="Buscar"
+          placeholder={PLACEHOLDER}
+          value={filtros.q}
+          onChange={(v) => setFiltro('q', v)}
+          onClear={() => setFiltro('q', '')}
+          onSubmit={() => filtros.q.trim().length >= 2 && addRecent(filtros.q)}
+          onSelect={(opt) => {
+            if (opt.href) { addRecent(opt.label); router.push(opt.href); }
+          }}
+          options={suggestions}
+          recents={recents}
+          onRemoveRecent={removeRecent}
+          loading={pending}
+          hint={tipoDetectado ? `Buscando por ${tipoDetectado}…` : undefined}
+          shortcut="Ctrl+K"
         />
-        <CardBody>
-          <SearchBox
-            label="Buscar"
-            placeholder={PLACEHOLDER}
-            value={filtros.q}
-            onChange={(v) => setFiltro('q', v)}
-            onClear={() => setFiltro('q', '')}
-            onSubmit={() => filtros.q.trim().length >= 2 && addRecent(filtros.q)}
-            onSelect={(opt) => {
-              if (opt.href) { addRecent(opt.label); router.push(opt.href); }
-            }}
-            options={suggestions}
-            recents={recents}
-            onRemoveRecent={removeRecent}
-            loading={pending}
-            hint={tipoDetectado ? `Buscando por ${tipoDetectado}…` : undefined}
-            shortcut="Ctrl+K"
-          />
-        </CardBody>
-      </Card>
+      </div>
 
-      {/* Vistas rápidas */}
-      <VistasRapidas title="Vistas rápidas" items={vistasItems} />
+      {/* Filtros rápidos (barra compacta) */}
+      <VistasRapidas variant="bar" items={vistasItems} />
 
-      {/* Layout: panel lateral + tabla */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
+      {/* Filtros + lista */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr] lg:items-start">
         <FilterSidebar
+          className="lg:sticky lg:top-4"
           groups={filterGroups}
           activeCount={filtrosActivos}
           onClearAll={limpiarFiltros}

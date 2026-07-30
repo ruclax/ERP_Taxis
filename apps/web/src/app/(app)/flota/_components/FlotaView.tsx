@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Card, CardBody, CardHeader, Badge, Button, SearchBox,
+  Badge, Button, SearchBox,
   VistasRapidas, FilterSidebar,
   type SearchBoxOption, type VistaRapidaItem, type FilterGroup,
 } from '@erp/ui/primitives';
@@ -210,38 +210,39 @@ export default function FlotaView({
 
   return (
     <div className="flex flex-col gap-5">
-      <Card>
-        <CardHeader
-          title="Flota vehicular"
-          subtitle={
-            hayFiltro
+      {/* Toolbar: título + búsqueda (foco principal) */}
+      <div className="flex flex-col gap-3">
+        <div>
+          <h1 className="text-xl font-bold ink">Flota vehicular</h1>
+          <p className="text-sm text-slate-500">
+            {hayFiltro
               ? `${initialVehiculos.length.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')} coinciden`
-              : `${total.toLocaleString('es-MX')} unidades registradas`
-          }
+              : `${total.toLocaleString('es-MX')} unidades registradas`}
+          </p>
+        </div>
+        <SearchBox
+          label="Buscar"
+          placeholder={PLACEHOLDER}
+          value={filtros.q}
+          onChange={(v) => setFiltro('q', v)}
+          onClear={() => setFiltro('q', '')}
+          onSubmit={() => filtros.q.trim().length >= 2 && addRecent(filtros.q)}
+          onSelect={(opt) => { addRecent(opt.label); setFiltro('q', opt.value); }}
+          options={suggestions}
+          recents={recents}
+          onRemoveRecent={removeRecent}
+          loading={pending}
+          hint={tipoDetectado ? `Buscando por ${tipoDetectado}…` : undefined}
+          shortcut="Ctrl+K"
         />
-        <CardBody>
-          <SearchBox
-            label="Buscar"
-            placeholder={PLACEHOLDER}
-            value={filtros.q}
-            onChange={(v) => setFiltro('q', v)}
-            onClear={() => setFiltro('q', '')}
-            onSubmit={() => filtros.q.trim().length >= 2 && addRecent(filtros.q)}
-            onSelect={(opt) => { addRecent(opt.label); setFiltro('q', opt.value); }}
-            options={suggestions}
-            recents={recents}
-            onRemoveRecent={removeRecent}
-            loading={pending}
-            hint={tipoDetectado ? `Buscando por ${tipoDetectado}…` : undefined}
-            shortcut="Ctrl+K"
-          />
-        </CardBody>
-      </Card>
+      </div>
 
-      <VistasRapidas title="Vistas rápidas" items={vistasItems} />
+      {/* Filtros rápidos (barra compacta) */}
+      <VistasRapidas variant="bar" items={vistasItems} />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr] lg:items-start">
         <FilterSidebar
+          className="lg:sticky lg:top-4"
           groups={filterGroups}
           activeCount={filtrosActivos}
           onClearAll={limpiarFiltros}

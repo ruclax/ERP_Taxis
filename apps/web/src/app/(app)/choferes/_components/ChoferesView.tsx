@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Card, CardBody, CardHeader, Button, SearchBox,
+  Button, SearchBox,
   VistasRapidas, FilterSidebar,
   type SearchBoxOption, type VistaRapidaItem, type FilterGroup,
 } from '@erp/ui/primitives';
@@ -291,37 +291,38 @@ export default function ChoferesView({
 
   return (
     <div className="flex flex-col gap-5">
-      <Card>
-        <CardHeader
-          title="Choferes"
-          subtitle={
-            hayFiltro
+      {/* Toolbar: título + búsqueda (foco principal) */}
+      <div className="flex flex-col gap-3">
+        <div>
+          <h1 className="text-xl font-bold ink">Choferes</h1>
+          <p className="text-sm text-slate-500">
+            {hayFiltro
               ? `${initialChoferes.length.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')} coinciden`
-              : `${conteos.total.toLocaleString('es-MX')} contratos activos`
-          }
+              : `${conteos.total.toLocaleString('es-MX')} contratos activos`}
+          </p>
+        </div>
+        <SearchBox
+          label="Buscar"
+          placeholder={PLACEHOLDER}
+          value={filtros.q}
+          onChange={(v) => setFiltro('q', v)}
+          onClear={() => setFiltro('q', '')}
+          onSubmit={() => filtros.q.trim().length >= 2 && addRecent(filtros.q)}
+          onSelect={(opt) => { if (opt.href) { addRecent(opt.label); router.push(opt.href); } }}
+          options={suggestions}
+          recents={recents}
+          onRemoveRecent={removeRecent}
+          loading={pending}
+          shortcut="Ctrl+K"
         />
-        <CardBody>
-          <SearchBox
-            label="Buscar"
-            placeholder={PLACEHOLDER}
-            value={filtros.q}
-            onChange={(v) => setFiltro('q', v)}
-            onClear={() => setFiltro('q', '')}
-            onSubmit={() => filtros.q.trim().length >= 2 && addRecent(filtros.q)}
-            onSelect={(opt) => { if (opt.href) { addRecent(opt.label); router.push(opt.href); } }}
-            options={suggestions}
-            recents={recents}
-            onRemoveRecent={removeRecent}
-            loading={pending}
-            shortcut="Ctrl+K"
-          />
-        </CardBody>
-      </Card>
+      </div>
 
-      <VistasRapidas title="Alertas y atajos" items={vistas} />
+      {/* Alertas y atajos (barra compacta) */}
+      <VistasRapidas variant="bar" items={vistas} />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr] lg:items-start">
         <FilterSidebar
+          className="lg:sticky lg:top-4"
           groups={filterGroups}
           activeCount={activos}
           onClearAll={limpiar}

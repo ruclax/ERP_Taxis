@@ -55,6 +55,8 @@ export interface VistasRapidasProps {
   className?: string;
   /** Etiqueta opcional encima de la grilla */
   title?: string;
+  /** 'grid' = tarjetas grandes (default); 'bar' = pills en una fila (compacto) */
+  variant?: 'grid' | 'bar';
 }
 
 /**
@@ -63,8 +65,48 @@ export interface VistasRapidasProps {
  * - estados visuales claros (color + borde + check)
  * - aria-pressed para lectores de pantalla
  */
-export function VistasRapidas({ items, className, title }: VistasRapidasProps) {
+export function VistasRapidas({ items, className, title, variant = 'grid' }: VistasRapidasProps) {
   if (items.length === 0) return null;
+
+  // Variante compacta: pills en una fila con scroll horizontal
+  if (variant === 'bar') {
+    return (
+      <section className={className} aria-label={title ?? 'Vistas rápidas'}>
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+          {items.map((item) => {
+            const tone = TONES[item.tone ?? 'default'];
+            const isActive = !!item.active;
+            const classes = cn(
+              'inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300',
+              isActive ? tone.active : tone.base
+            );
+            const inner = (
+              <>
+                <span className={cn('flex shrink-0 items-center [&_svg]:h-4 [&_svg]:w-4', isActive ? tone.iconActive : tone.icon)} aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className={isActive ? 'text-white' : 'ink'}>{item.label}</span>
+                {item.count !== undefined && item.count !== null && (
+                  <span className={cn(
+                    'inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums',
+                    isActive ? tone.badgeActive : tone.badge
+                  )}>
+                    {item.count.toLocaleString('es-MX')}
+                  </span>
+                )}
+              </>
+            );
+            return item.href ? (
+              <a key={item.id} href={item.href} aria-current={isActive ? 'page' : undefined} className={classes}>{inner}</a>
+            ) : (
+              <button key={item.id} type="button" onClick={item.onClick} aria-pressed={isActive} className={classes}>{inner}</button>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={className} aria-label={title ?? 'Vistas rápidas'}>
