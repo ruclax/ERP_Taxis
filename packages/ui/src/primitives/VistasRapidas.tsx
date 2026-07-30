@@ -72,7 +72,7 @@ export function VistasRapidas({ items, className, title, variant = 'grid' }: Vis
   if (variant === 'bar') {
     return (
       <section className={className} aria-label={title ?? 'Vistas rápidas'}>
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+        <div className="flex flex-wrap gap-2">
           {items.map((item) => {
             const tone = TONES[item.tone ?? 'default'];
             const isActive = !!item.active;
