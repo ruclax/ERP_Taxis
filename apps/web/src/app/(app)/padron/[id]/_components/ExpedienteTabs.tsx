@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tabs } from '@erp/ui/primitives';
 
@@ -26,10 +26,10 @@ export default function ExpedienteTabs({
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlTab = searchParams.get('tab') as TabKey | null;
-  const [tab, setTab] = useState<TabKey>(urlTab && TAB_KEYS.includes(urlTab) ? urlTab : 'general');
+  // La URL es la fuente de verdad de la pestaña activa (deep-link + navegación externa).
+  const tab: TabKey = urlTab && TAB_KEYS.includes(urlTab) ? urlTab : 'general';
 
   function cambiar(next: TabKey) {
-    setTab(next);
     const params = new URLSearchParams(searchParams.toString());
     if (next === 'general') params.delete('tab');
     else params.set('tab', next);
