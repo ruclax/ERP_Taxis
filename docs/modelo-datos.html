@@ -1,0 +1,364 @@
+<title>Modelo de datos — ERP Taxi</title>
+<style>
+  :root {
+    /* neutrals — slate with a faint blue bias, chosen not defaulted */
+    --ground: #f6f7f9;
+    --panel: #ffffff;
+    --panel-2: #f0f2f6;
+    --line: #dde1e9;
+    --ink: #1a2330;
+    --ink-soft: #4a5568;
+    --ink-mute: #7c8798;
+    /* signature: taxi amber, used sparingly for the hub + value chain */
+    --taxi: #d98a1f;
+    --taxi-soft: #f4e4c9;
+    /* domain hues */
+    --d-exp: #2f6df0;   /* expediente  — blue */
+    --d-flota: #d98a1f; /* flota       — amber */
+    --d-sitio: #0f9b8e; /* sitios      — teal */
+    --d-teso: #7c5ce0;  /* tesorería   — violet */
+    --d-gob: #e0417a;   /* gobernanza  — rose */
+    --d-sind: #64748b;  /* sindical    — slate */
+    --radius: 14px;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0e131b;
+      --panel: #161d28;
+      --panel-2: #1d2632;
+      --line: #2a3543;
+      --ink: #eef1f6;
+      --ink-soft: #b3bdcc;
+      --ink-mute: #7c8798;
+      --taxi: #f2b24a;
+      --taxi-soft: #3a2f18;
+      --d-exp: #5b93ff;
+      --d-flota: #f2b24a;
+      --d-sitio: #2cc3b4;
+      --d-teso: #a488f5;
+      --d-gob: #f56a9b;
+      --d-sind: #94a3b8;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f6f7f9; --panel: #ffffff; --panel-2: #f0f2f6; --line: #dde1e9;
+    --ink: #1a2330; --ink-soft: #4a5568; --ink-mute: #7c8798; --taxi: #d98a1f; --taxi-soft: #f4e4c9;
+    --d-exp: #2f6df0; --d-flota: #d98a1f; --d-sitio: #0f9b8e; --d-teso: #7c5ce0; --d-gob: #e0417a; --d-sind: #64748b;
+  }
+  :root[data-theme="dark"] {
+    --ground: #0e131b; --panel: #161d28; --panel-2: #1d2632; --line: #2a3543;
+    --ink: #eef1f6; --ink-soft: #b3bdcc; --ink-mute: #7c8798; --taxi: #f2b24a; --taxi-soft: #3a2f18;
+    --d-exp: #5b93ff; --d-flota: #f2b24a; --d-sitio: #2cc3b4; --d-teso: #a488f5; --d-gob: #f56a9b; --d-sind: #94a3b8;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .wrap {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: clamp(1.25rem, 4vw, 3.5rem) clamp(1rem, 4vw, 2rem) 4rem;
+  }
+  .container { max-width: 1080px; margin: 0 auto; }
+
+  /* ---------- header ---------- */
+  .eyebrow {
+    font: 600 0.72rem/1 var(--mono);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--taxi);
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--taxi); border-radius: 2px; }
+  h1 {
+    font-size: clamp(1.9rem, 5vw, 3rem);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 1rem 0 0;
+    text-wrap: balance;
+  }
+  h1 em { color: var(--taxi); font-style: normal; }
+  .lede {
+    color: var(--ink-soft);
+    font-size: clamp(1rem, 2.2vw, 1.15rem);
+    max-width: 60ch;
+    margin: 0.9rem 0 0;
+  }
+  .stats {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  .stat {
+    display: flex; align-items: baseline; gap: 0.45rem;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 0.4rem 0.9rem;
+  }
+  .stat b { font: 700 1.05rem var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+  .stat span { font-size: 0.8rem; color: var(--ink-mute); }
+
+  /* ---------- section scaffolding ---------- */
+  section { margin-top: clamp(2.5rem, 6vw, 4rem); }
+  .sec-head { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .sec-num { font: 600 0.75rem var(--mono); color: var(--ink-mute); }
+  h2 { font-size: clamp(1.25rem, 3vw, 1.6rem); letter-spacing: -0.01em; margin: 0; font-weight: 750; }
+  .sec-sub { color: var(--ink-mute); font-size: 0.9rem; width: 100%; margin-top: -0.4rem; }
+
+  /* ---------- value chain ---------- */
+  .chain {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: clamp(1.25rem, 3vw, 2rem);
+    overflow-x: auto;
+  }
+  .flow { display: flex; align-items: stretch; gap: 0; min-width: min-content; }
+  .node {
+    flex: 1 1 0; min-width: 118px;
+    border: 1.5px solid var(--nc, var(--line));
+    border-radius: 12px;
+    background: var(--panel-2);
+    padding: 0.85rem 0.9rem;
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .node.hub { --nc: var(--taxi); background: var(--taxi-soft); box-shadow: 0 0 0 3px color-mix(in srgb, var(--taxi) 18%, transparent); }
+  .node .tname { font: 600 0.9rem var(--mono); color: var(--ink); }
+  .node .role { font-size: 0.72rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.05em; }
+  .arrow {
+    align-self: center; flex: 0 0 auto;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 0 0.5rem; color: var(--ink-mute);
+  }
+  .arrow .lbl { font: 500 0.62rem var(--mono); white-space: nowrap; }
+  .arrow .ln { font-size: 1.1rem; line-height: 1; color: var(--taxi); }
+  .chain-foot {
+    margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--line);
+    display: flex; flex-wrap: wrap; gap: 1.25rem; font-size: 0.85rem; color: var(--ink-soft);
+  }
+  .chain-foot b { font-family: var(--mono); font-weight: 600; color: var(--ink); font-size: 0.82rem; }
+
+  /* ---------- domains grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 1.15rem 1.2rem 1.25rem;
+    border-top: 3px solid var(--dc);
+    display: flex; flex-direction: column; gap: 0.7rem;
+  }
+  .card-top { display: flex; align-items: center; gap: 0.6rem; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--dc); flex: 0 0 auto; }
+  .card h3 { margin: 0; font-size: 1.02rem; font-weight: 700; letter-spacing: -0.01em; }
+  .tag {
+    margin-left: auto; font: 600 0.62rem var(--mono); letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--dc);
+    background: color-mix(in srgb, var(--dc) 12%, transparent);
+    padding: 0.2rem 0.5rem; border-radius: 6px;
+  }
+  .card .util { font-size: 0.88rem; color: var(--ink-soft); margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .chip {
+    font: 500 0.74rem var(--mono);
+    background: var(--panel-2); border: 1px solid var(--line);
+    color: var(--ink-soft); padding: 0.2rem 0.5rem; border-radius: 6px;
+  }
+  .chip.key { color: var(--dc); border-color: color-mix(in srgb, var(--dc) 40%, var(--line)); font-weight: 600; }
+
+  /* ---------- bridges ---------- */
+  .bridges { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+  .bridge {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 0.5rem;
+    position: relative; overflow: hidden;
+  }
+  .bridge::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--taxi); }
+  .bridge .bnum { font: 700 0.8rem var(--mono); color: var(--taxi); }
+  .bridge code {
+    font: 600 0.8rem var(--mono); color: var(--ink);
+    background: var(--panel-2); border: 1px solid var(--line);
+    padding: 0.25rem 0.5rem; border-radius: 6px; align-self: flex-start;
+    word-break: break-all;
+  }
+  .bridge p { margin: 0; font-size: 0.86rem; color: var(--ink-soft); }
+
+  footer {
+    margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
+    font-size: 0.8rem; color: var(--ink-mute); display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem;
+  }
+  footer .mono { font-family: var(--mono); }
+</style>
+
+<div class="wrap">
+  <div class="container">
+
+    <header>
+      <div class="eyebrow">Modelo de datos · plataforma</div>
+      <h1>Todo gira en torno al <em>socio</em>.</h1>
+      <p class="lede">Mapa funcional de la base de datos del ERP del Sindicato: cómo se conectan las tablas para que la plataforma sirva. Una persona en el centro, seis dominios a su alrededor.</p>
+      <div class="stats">
+        <div class="stat"><b>35</b><span>tablas</span></div>
+        <div class="stat"><b>56</b><span>relaciones (FK)</span></div>
+        <div class="stat"><b>6</b><span>dominios funcionales</span></div>
+        <div class="stat"><b>27</b><span>tablas apuntan a <span class="mono" style="font-family:var(--mono)">socios</span></span></div>
+      </div>
+    </header>
+
+    <!-- VALUE CHAIN -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-num">01</span>
+        <h2>La cadena de valor</h2>
+        <p class="sec-sub">El corazón operativo. Desde un socio se llega a su taxi y a si el seguro está vigente; desde un sitio, a su delegado y sus unidades.</p>
+      </div>
+      <div class="chain">
+        <div class="flow">
+          <div class="node hub">
+            <span class="role">Persona · eje</span>
+            <span class="tname">socios</span>
+          </div>
+          <div class="arrow"><span class="lbl">titular</span><span class="ln">→</span></div>
+          <div class="node" style="--nc:var(--d-flota)">
+            <span class="role">Permiso</span>
+            <span class="tname">concesiones</span>
+          </div>
+          <div class="arrow"><span class="lbl">unidad actual</span><span class="ln">→</span></div>
+          <div class="node" style="--nc:var(--d-flota)">
+            <span class="role">Unidad</span>
+            <span class="tname">vehiculos</span>
+          </div>
+          <div class="arrow"><span class="lbl">asegura</span><span class="ln">→</span></div>
+          <div class="node" style="--nc:var(--d-flota)">
+            <span class="role">Seguro</span>
+            <span class="tname">polizas</span>
+          </div>
+        </div>
+        <div class="chain-foot">
+          <span><b>concesiones.sitio_id → sitios</b> · cada concesión se adscribe a un sitio, y el sitio tiene un delegado (que es otro socio).</span>
+          <span><b>concesion_choferes</b> · relación M:N — un socio maneja varias concesiones; una concesión tiene varios choferes.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOMAINS -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-num">02</span>
+        <h2>Los seis dominios</h2>
+        <p class="sec-sub">Cada tabla cuelga de uno de estos anillos. Los tres primeros son el núcleo operativo; los tres siguientes, la gestión y la vida sindical.</p>
+      </div>
+      <div class="grid">
+
+        <div class="card" style="--dc:var(--d-exp)">
+          <div class="card-top"><span class="dot"></span><h3>Expediente del socio</h3></div>
+          <p class="util">El 360° de la persona: domicilio, contacto, credencial, licencia, beneficiarios, historial de estatus y documentos escaneados.</p>
+          <div class="chips">
+            <span class="chip">socios_direcciones</span>
+            <span class="chip">socios_contactos</span>
+            <span class="chip">socios_credencial_elector</span>
+            <span class="chip">socios_licencia_conducir</span>
+            <span class="chip">socios_beneficiarios</span>
+            <span class="chip">socios_historial_estatus</span>
+            <span class="chip">documentos</span>
+          </div>
+        </div>
+
+        <div class="card" style="--dc:var(--d-flota)">
+          <div class="card-top"><span class="dot"></span><h3>Concesión &amp; Flota</h3></div>
+          <p class="util">El activo productivo y su operación: titular, unidad, seguro y revista vigentes, choferes asignados y control antidoping.</p>
+          <div class="chips">
+            <span class="chip key">concesiones</span>
+            <span class="chip key">vehiculos</span>
+            <span class="chip">polizas</span>
+            <span class="chip">revistas_vehiculares</span>
+            <span class="chip">vehiculo_asignaciones</span>
+            <span class="chip">concesion_choferes</span>
+            <span class="chip">historial_choferes</span>
+            <span class="chip">antidoping</span>
+          </div>
+        </div>
+
+        <div class="card" style="--dc:var(--d-sitio)">
+          <div class="card-top"><span class="dot"></span><h3>Operación &amp; Sitios</h3></div>
+          <p class="util">La organización territorial: agrupar concesiones por sitio, su delegado responsable, sanciones y el <strong>alcance de permisos por sitio</strong>.</p>
+          <div class="chips">
+            <span class="chip key">sitios</span>
+            <span class="chip">sanciones_sitio</span>
+          </div>
+        </div>
+
+        <div class="card" style="--dc:var(--d-teso)">
+          <div class="card-top"><span class="dot"></span><h3>Tesorería &amp; Cobranza</h3><span class="tag">módulo pago</span></div>
+          <p class="util">El dinero: cuánto debe cada socio, cobros por concesión y sitio, movimientos de caja y cortes.</p>
+          <div class="chips">
+            <span class="chip">mensualidades_cuotas</span>
+            <span class="chip">cuotas_catalogo</span>
+            <span class="chip">tesoreria_movimientos</span>
+            <span class="chip">tesoreria_cortes_caja</span>
+            <span class="chip">adeudos</span>
+          </div>
+        </div>
+
+        <div class="card" style="--dc:var(--d-gob)">
+          <div class="card-top"><span class="dot"></span><h3>Gobernanza &amp; RBAC</h3></div>
+          <p class="util">Quién entra y qué puede hacer: liga socio↔cuenta, rol con alcance (sitio/área), impersonación y traza de auditoría.</p>
+          <div class="chips">
+            <span class="chip key">usuarios_perfil</span>
+            <span class="chip key">usuarios_roles</span>
+            <span class="chip">roles</span>
+            <span class="chip">impersonaciones</span>
+            <span class="chip">auditoria</span>
+          </div>
+        </div>
+
+        <div class="card" style="--dc:var(--d-sind)">
+          <div class="card-top"><span class="dot"></span><h3>Vida sindical</h3><span class="tag">extras</span></div>
+          <p class="util">Asambleas y actas, honor y justicia, funerario y bitácora de accidentes. Fuera del contrato base.</p>
+          <div class="chips">
+            <span class="chip">asambleas</span>
+            <span class="chip">actas</span>
+            <span class="chip">acuerdos</span>
+            <span class="chip">casos_honor_justicia</span>
+            <span class="chip">audiencias</span>
+            <span class="chip">funerario_inscripciones</span>
+            <span class="chip">funerario_servicios</span>
+            <span class="chip">bitacora_accidentes</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- BRIDGES -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-num">03</span>
+        <h2>Los tres puentes clave</h2>
+        <p class="sec-sub">Relaciones que no son "una más": son las que hacen que el modelo funcione como un todo.</p>
+      </div>
+      <div class="bridges">
+        <div class="bridge">
+          <span class="bnum">Puente 1</span>
+          <code>usuarios_perfil.socio_id</code>
+          <p>Conecta la <strong>persona</strong> con su <strong>cuenta de acceso</strong>. Sin él, el socio y su login serían dos mundos separados.</p>
+        </div>
+        <div class="bridge">
+          <span class="bnum">Puente 2</span>
+          <code>concesion_choferes</code>
+          <p>Relación <strong>M:N</strong> socio↔concesión: refleja el modelo real — un chofer maneja varias concesiones y una concesión rota entre choferes.</p>
+        </div>
+        <div class="bridge">
+          <span class="bnum">Puente 3</span>
+          <code>usuarios_roles.scope_sitio_id → sitios</code>
+          <p>Hace que un <strong>delegado solo vea su sitio</strong>: el RBAC no es global, es territorial. Aquí cierra el círculo el módulo de Sitios.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span class="mono">ERP · Sindicato de Choferes de Sitio · Nuevo Laredo</span>
+      <span>Fuente: grafo de llaves foráneas de la BD (producción)</span>
+    </footer>
+
+  </div>
+</div>
