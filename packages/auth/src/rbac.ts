@@ -5,7 +5,7 @@
 import type { RolCodigo } from '@erp/db';
 
 export type Modulo =
-  | 'mipanel' | 'dashboard' | 'padron' | 'flota' | 'choferes'
+  | 'mipanel' | 'dashboard' | 'padron' | 'flota' | 'choferes' | 'sitios'
   | 'polizas' | 'funerario' | 'tesoreria' | 'bitacora' | 'asambleas' | 'honor';
 
 export type ScopeTipo = 'GLOBAL' | 'AREA' | 'SITIO';
@@ -40,7 +40,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     descripcion: 'Rol exclusivo del desarrollador. Acceso god-mode a todas las tablas y bypasea RLS.',
     persona: 'Daniel Isaías Sánchez Treviño',
     scope: 'GLOBAL',
-    modulos: ['mipanel','dashboard','padron','flota','choferes','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
+    modulos: ['mipanel','dashboard','padron','flota','choferes','sitios','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
     ordenJerarquia: 0,
   },
   admin_plataforma: {
@@ -49,7 +49,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     descripcion: 'Operador contratado por el sindicato. Administra, configura y mantiene al día la plataforma. Encargado de convocatorias, notificaciones y actualización de datos sensibles. Acceso de lectura y escritura a todos los módulos; cada acción queda en `auditoria`.',
     persona: 'Jesús Antonio Torres Solís',
     scope: 'GLOBAL',
-    modulos: ['mipanel','dashboard','padron','flota','choferes','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
+    modulos: ['mipanel','dashboard','padron','flota','choferes','sitios','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
     ordenJerarquia: 1,
   },
   sec_general: {
@@ -58,7 +58,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     descripcion: 'Convoca juntas, representa al sindicato, autoriza datos y firma cortes de caja.',
     persona: 'Jorge Alberto Hernández González',
     scope: 'GLOBAL',
-    modulos: ['mipanel','dashboard','padron','flota','choferes','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
+    modulos: ['mipanel','dashboard','padron','flota','choferes','sitios','polizas','funerario','tesoreria','bitacora','asambleas','honor'],
     ordenJerarquia: 2,
   },
   sec_organizacion: {
@@ -68,7 +68,7 @@ export const ROLES: Record<RolCodigo, RolDef> = {
     persona: 'Bernardo Alcaraz Frausto',
     suplente: 'Arturo Villarreal Amaro',
     scope: 'GLOBAL',
-    modulos: ['mipanel','dashboard','padron','flota','choferes'],
+    modulos: ['mipanel','dashboard','padron','flota','choferes','sitios'],
     ordenJerarquia: 3,
   },
   tesorero: {

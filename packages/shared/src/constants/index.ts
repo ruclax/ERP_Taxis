@@ -36,6 +36,7 @@ export const MODULO_LABELS: Record<string, string> = {
   padron: 'Padrón',
   flota: 'Flota',
   choferes: 'Choferes',
+  sitios: 'Sitios',
   polizas: 'Pólizas',
   funerario: 'Funerario',
   tesoreria: 'Tesorería',
