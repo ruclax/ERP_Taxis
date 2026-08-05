@@ -122,8 +122,10 @@ await check('Búsqueda por CURP', async () => {
 sec('FASE 2 — Gestión Vehicular + Trazabilidad');
 
 await check('Tabla `sitios` con datos', async () => {
+  // Tras la rectificación de datos (migración 052) se eliminaron 46 sitios
+  // basura sin concesiones; quedan 41 sitios reales, todos con concesiones.
   const r = await q('select count(*)::int as n from sitios');
-  return r[0].n > 50 ? `${r[0].n} sitios` : false;
+  return r[0].n > 30 ? `${r[0].n} sitios` : false;
 });
 
 await check('Tabla `concesiones` con datos', async () => {
