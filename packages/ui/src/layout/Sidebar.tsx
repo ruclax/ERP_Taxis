@@ -91,7 +91,7 @@ export function Sidebar({ label = 'Navegación principal', open, onClose, childr
           // Layout común
           'flex flex-col border-r border-slate-800 bg-(--ink) text-slate-200',
           // Móvil: drawer fijo overlay
-          'fixed inset-y-0 left-0 z-50 w-[300px] transition-transform duration-200',
+          'fixed inset-y-0 left-0 z-50 w-[300px] transition-transform duration-200 motion-reduce:transition-none',
           open ? 'translate-x-0' : '-translate-x-full',
           // Desktop: docked en flex, altura del padre
           'md:relative md:inset-auto md:z-auto md:h-full md:w-[260px] md:shrink-0 md:translate-x-0 md:transition-none',

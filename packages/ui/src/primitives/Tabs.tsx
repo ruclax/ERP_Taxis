@@ -28,7 +28,7 @@ export function Tabs<T extends string>({ value, onChange, options, scrollable, c
             aria-selected={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
+              'inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
               active
                 ? 'border-(--crit) text-(--ink)'
                 : 'border-transparent text-slate-500 hover:text-slate-700'

@@ -63,6 +63,12 @@ const NAV_GROUPS: NavGroup[] = [
 
 const PERSPECTIVA_KEY = 'erp.perspectivaRol';
 
+// URL del panel admin (app separada). En producción debe venir de env;
+// en desarrollo cae a localhost. Si no hay valor en prod, el link no se muestra.
+const adminUrl =
+  process.env.NEXT_PUBLIC_ADMIN_URL ??
+  (process.env.NODE_ENV !== 'production' ? 'http://localhost:3001' : null);
+
 export interface AppFrameProps {
   nombreDisplay: string;
   esSuperadmin: boolean;
@@ -186,11 +192,11 @@ export function AppFrame({ nombreDisplay, esSuperadmin, roles, modulosPorRol, ch
               avatarColor={esSuperadmin ? '#b91c1c' : '#475569'}
             />
             <div className="border-t border-slate-800/60">
-              {esSuperadmin && (
+              {esSuperadmin && adminUrl && (
                 <Sidebar.Action
                   icon={<ExternalLink size={14} />}
                   label="Abrir panel admin"
-                  href="http://localhost:3001"
+                  href={adminUrl}
                   tone="accent"
                 />
               )}
