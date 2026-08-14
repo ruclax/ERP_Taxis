@@ -290,10 +290,7 @@ export default function PadronView({
         />
       </div>
 
-      {/* Filtros rápidos (barra compacta) */}
-      <VistasRapidas variant="bar" items={vistasItems} />
-
-      {/* Lista a ancho completo; filtros en panel deslizante */}
+      {/* Lista a ancho completo; filtros y vistas en panel deslizante */}
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Button variant="secondary" size="sm" iconLeft={<SlidersHorizontal size={15} />} onClick={() => setFiltrosOpen(true)}>
@@ -417,12 +414,22 @@ export default function PadronView({
         </div>
 
       <Drawer open={filtrosOpen} onClose={() => setFiltrosOpen(false)} title="Filtros">
-        <FilterSidebar
-          embedded
-          groups={filterGroups}
-          activeCount={filtrosActivos}
-          onClearAll={limpiarFiltros}
-        />
+        <div className="flex flex-col gap-5">
+          <VistasRapidas
+            variant="grid"
+            title="Vistas rápidas"
+            items={vistasItems.map((it) => ({
+              ...it,
+              onClick: () => { it.onClick?.(); setFiltrosOpen(false); },
+            }))}
+          />
+          <FilterSidebar
+            embedded
+            groups={filterGroups}
+            activeCount={filtrosActivos}
+            onClearAll={limpiarFiltros}
+          />
+        </div>
       </Drawer>
     </div>
   );

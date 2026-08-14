@@ -318,9 +318,6 @@ export default function ChoferesView({
         />
       </div>
 
-      {/* Alertas y atajos (barra compacta) */}
-      <VistasRapidas variant="bar" items={vistas} />
-
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Button variant="secondary" size="sm" iconLeft={<SlidersHorizontal size={15} />} onClick={() => setFiltrosOpen(true)}>
@@ -456,12 +453,22 @@ export default function ChoferesView({
         </div>
 
       <Drawer open={filtrosOpen} onClose={() => setFiltrosOpen(false)} title="Filtros">
-        <FilterSidebar
-          embedded
-          groups={filterGroups}
-          activeCount={activos}
-          onClearAll={limpiar}
-        />
+        <div className="flex flex-col gap-5">
+          <VistasRapidas
+            variant="grid"
+            title="Vistas rápidas"
+            items={vistas.map((it) => ({
+              ...it,
+              onClick: () => { it.onClick?.(); setFiltrosOpen(false); },
+            }))}
+          />
+          <FilterSidebar
+            embedded
+            groups={filterGroups}
+            activeCount={activos}
+            onClearAll={limpiar}
+          />
+        </div>
       </Drawer>
     </div>
   );
