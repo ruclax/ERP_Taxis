@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Taxi ERP — Sindicato',
-  description: 'Sistema Integral del Sindicato de Choferes de Sitio de Nuevo Laredo',
+  description: 'Sistema Integral del Sindicato de Choferes de Automóviles de Sitio y Camiones de Pasajeros de Nuevo Laredo',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

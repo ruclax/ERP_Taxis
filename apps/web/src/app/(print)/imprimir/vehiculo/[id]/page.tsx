@@ -40,8 +40,8 @@ export default async function ImprimirVehiculoPage({ params }: { params: Promise
       <article className="rounded-lg bg-white p-8 text-slate-800 shadow-sm print:rounded-none print:p-0 print:shadow-none">
         <header className="flex items-start justify-between gap-4 border-b-2 border-slate-800 pb-3">
           <div>
-            <h1 className="text-lg font-bold uppercase tracking-tight">Sindicato de Choferes de Sitio</h1>
-            <p className="text-xs text-slate-500">de Automóviles de Alquiler de Nuevo Laredo, Tamps.</p>
+            <h1 className="text-base font-bold uppercase leading-tight tracking-tight">Sindicato de Choferes de Automóviles de Sitio y Camiones de Pasajeros de Nuevo Laredo</h1>
+            <p className="mt-0.5 text-xs text-slate-500">Nuevo Laredo, Tamaulipas</p>
           </div>
           <div className="text-right text-xs text-slate-500">
             <div className="font-semibold text-slate-700">FICHA DEL VEHÍCULO</div>

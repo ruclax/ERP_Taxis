@@ -38,7 +38,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold ink">Taxi ERP</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Sindicato de Choferes de Sitio de Nuevo Laredo
+            Sindicato de Choferes de Automóviles de Sitio y Camiones de Pasajeros de Nuevo Laredo
           </p>
         </div>
 

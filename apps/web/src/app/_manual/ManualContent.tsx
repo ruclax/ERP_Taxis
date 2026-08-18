@@ -22,7 +22,7 @@ export default function ManualContent() {
     <div className="flex flex-col gap-8">
       <Sec id="bienvenida" titulo="1. Bienvenida">
         <P>
-          Esta es la plataforma de gestión del <b>Sindicato de Choferes de Sitio de Nuevo Laredo</b>.
+          Esta es la plataforma de gestión del <b>Sindicato de Choferes de Automóviles de Sitio y Camiones de Pasajeros de Nuevo Laredo</b>.
           Centraliza el expediente de cada agremiado, sus concesiones, la flota de vehículos, las pólizas
           de seguro, los sitios y sus delegados. El objetivo es tener <b>toda la información en un solo lugar</b>,
           siempre al día y accesible según el rol de cada persona.
