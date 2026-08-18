@@ -37,6 +37,30 @@ export async function statsGenerales(sb: SB) {
   };
 }
 
+export async function pendientesAtencion(sb: SB) {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const en30 = new Date();
+  en30.setDate(en30.getDate() + 30);
+  const en30s = en30.toISOString().slice(0, 10);
+
+  const [
+    { count: sitiosSinDelegado },
+    { count: sociosSinRfc },
+    { count: licenciasPorVencer },
+  ] = await Promise.all([
+    sb.from('sitios').select('id', { count: 'exact', head: true }).is('delegado_socio_id', null),
+    sb.from('socios').select('id', { count: 'exact', head: true }).is('rfc', null),
+    sb.from('socios_licencia_conducir').select('id', { count: 'exact', head: true })
+      .eq('es_actual', true).gte('fecha_vencimiento', hoy).lte('fecha_vencimiento', en30s),
+  ]);
+
+  return {
+    sitios_sin_delegado: sitiosSinDelegado ?? 0,
+    socios_sin_rfc: sociosSinRfc ?? 0,
+    licencias_por_vencer: licenciasPorVencer ?? 0,
+  };
+}
+
 export async function vencimientosProximos(sb: SB, dias = 30) {
   const hoy = new Date();
   const futuro = new Date();

@@ -1,109 +1,165 @@
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 import { createSupabaseServer } from '@erp/db/client/server';
-import { statsGenerales, vencimientosProximos, distribucionPorSitio } from '@erp/db/queries/dashboard';
+import { statsGenerales, vencimientosProximos, distribucionPorSitio, pendientesAtencion } from '@erp/db/queries/dashboard';
 import { KpiCard } from '@erp/ui/data';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
-import { Users, Car, Shield, AlertTriangle, HeartHandshake } from 'lucide-react';
+import {
+  Users, Car, Shield, AlertTriangle, HeartHandshake,
+  MapPin, IdCard, FileWarning, UserPlus, ChevronRight, ArrowRight,
+} from 'lucide-react';
 import { fmtFechaCorta, diasParaVencer } from '@erp/shared/formatters';
 
-export default async function DashboardPage() {
+const RANGOS = [30, 60, 90] as const;
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ dias?: string }>;
+}) {
+  const sp = await searchParams;
+  const dias = RANGOS.includes(Number(sp.dias) as (typeof RANGOS)[number]) ? Number(sp.dias) : 60;
+
   const supabase = createSupabaseServer(await cookies());
-  const [stats, vencimientos, sitios] = await Promise.all([
+  const [stats, vencimientos, sitios, pend] = await Promise.all([
     statsGenerales(supabase),
-    vencimientosProximos(supabase, 60),
+    vencimientosProximos(supabase, dias),
     distribucionPorSitio(supabase),
+    pendientesAtencion(supabase),
   ]);
+
+  // Panel "Requiere atención" — solo lo que tiene pendientes, priorizado.
+  const atencion = [
+    { n: stats.polizas_vencidas, label: 'Pólizas vencidas', hint: 'Renovar cobertura', href: '/polizas', icon: <Shield size={18} />, tone: 'critical' as const },
+    { n: pend.licencias_por_vencer, label: 'Licencias por vencer', hint: 'Próximos 30 días', href: '/choferes?licencia=POR_VENCER', icon: <IdCard size={18} />, tone: 'warn' as const },
+    { n: stats.antidoping_alertas, label: 'Antidoping por vencer', hint: 'Revisar cumplimiento', href: '/choferes?antidoping=VENCIDA', icon: <AlertTriangle size={18} />, tone: 'warn' as const },
+    { n: pend.sitios_sin_delegado, label: 'Sitios sin delegado', hint: 'Asignar responsable', href: '/sitios', icon: <MapPin size={18} />, tone: 'warn' as const },
+    { n: pend.socios_sin_rfc, label: 'Socios sin RFC', hint: 'Completar expediente', href: '/padron', icon: <FileWarning size={18} />, tone: 'info' as const },
+  ].filter((a) => a.n > 0);
 
   return (
     <div className="flex flex-col gap-6">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
-        <KpiCard
-          label="Socios"
-          value={stats.socios.toLocaleString('es-MX')}
-          hint={`${stats.socios_activos} activos`}
-          icon={<Users size={20} />}
-        />
-        <KpiCard
-          label="Unidades"
-          value={stats.vehiculos.toLocaleString('es-MX')}
-          hint={`${stats.independientes} indep.`}
-          icon={<Car size={20} />}
-        />
-        <KpiCard
-          label="Alertas críticas"
-          value={(stats.polizas_vencidas + stats.antidoping_alertas).toLocaleString('es-MX')}
-          hint={`${stats.polizas_vencidas} pólizas vencidas`}
-          icon={<AlertTriangle size={20} />}
-          tone="critical"
-        />
-        <KpiCard
-          label="Pólizas vigentes"
-          value={stats.polizas_vigentes.toLocaleString('es-MX')}
-          icon={<Shield size={20} />}
-          tone="success"
-        />
-        <KpiCard
-          label="Concesiones"
-          value={stats.concesiones.toLocaleString('es-MX')}
-          icon={<HeartHandshake size={20} />}
-        />
+      {/* Accesos rápidos */}
+      <div className="flex flex-wrap gap-2">
+        <QuickAction href="/padron/nuevo" icon={<UserPlus size={16} />} label="Alta de socio" primary />
+        <QuickAction href="/flota" icon={<Car size={16} />} label="Flota" />
+        <QuickAction href="/sitios" icon={<MapPin size={16} />} label="Sitios" />
+        <QuickAction href="/polizas" icon={<Shield size={16} />} label="Pólizas" />
       </div>
+
+      {/* KPIs clicables */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+        <KpiLink href="/padron">
+          <KpiCard label="Socios" value={stats.socios.toLocaleString('es-MX')} hint={`${stats.socios_activos} activos`} icon={<Users size={20} />} />
+        </KpiLink>
+        <KpiLink href="/flota">
+          <KpiCard label="Unidades" value={stats.vehiculos.toLocaleString('es-MX')} hint={`${stats.independientes} indep.`} icon={<Car size={20} />} />
+        </KpiLink>
+        <KpiLink href="/polizas">
+          <KpiCard label="Alertas críticas" value={(stats.polizas_vencidas + stats.antidoping_alertas).toLocaleString('es-MX')} hint={`${stats.polizas_vencidas} pólizas vencidas`} icon={<AlertTriangle size={20} />} tone="critical" />
+        </KpiLink>
+        <KpiLink href="/polizas">
+          <KpiCard label="Pólizas vigentes" value={stats.polizas_vigentes.toLocaleString('es-MX')} icon={<Shield size={20} />} tone="success" />
+        </KpiLink>
+        <KpiLink href="/flota">
+          <KpiCard label="Concesiones" value={stats.concesiones.toLocaleString('es-MX')} icon={<HeartHandshake size={20} />} />
+        </KpiLink>
+      </div>
+
+      {/* Requiere atención */}
+      {atencion.length > 0 && (
+        <Card>
+          <CardHeader title="Requiere atención" subtitle="Pendientes accionables — toca para resolver." />
+          <CardBody className="!p-0">
+            <ul className="divide-y divide-slate-100">
+              {atencion.map((a) => (
+                <li key={a.label}>
+                  <Link href={a.href} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50">
+                    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${TONE_ICON[a.tone]}`}>{a.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-slate-800">{a.label}</div>
+                      <div className="text-xs text-slate-500">{a.hint}</div>
+                    </div>
+                    <span className={`num shrink-0 text-lg font-bold tabular-nums ${TONE_TEXT[a.tone]}`}>{a.n.toLocaleString('es-MX')}</span>
+                    <ChevronRight size={16} className="shrink-0 text-slate-300" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardBody>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Vencimientos próximos (2/3) */}
         <Card className="lg:col-span-2">
           <CardHeader
             title="Vencimientos próximos"
-            subtitle="Pólizas que vencen en los próximos 60 días"
+            subtitle={`Pólizas que vencen en los próximos ${dias} días`}
+            action={
+              <div className="flex gap-1" role="group" aria-label="Rango de días">
+                {RANGOS.map((d) => (
+                  <Link
+                    key={d}
+                    href={`/dashboard?dias=${d}`}
+                    scroll={false}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                      d === dias ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {d}d
+                  </Link>
+                ))}
+              </div>
+            }
           />
           <CardBody className="!p-0">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500">
-                <tr>
-                  <th className="label-erp px-4 py-3 text-left">Socio</th>
-                  <th className="label-erp px-4 py-3 text-left hidden md:table-cell">Concesión</th>
-                  <th className="label-erp px-4 py-3 text-left">Placas</th>
-                  <th className="label-erp px-4 py-3 text-left">Vence</th>
-                  <th className="label-erp px-4 py-3 text-right">Días</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {vencimientos.length === 0 ? (
-                  <tr><td colSpan={5} className="p-12 text-center text-slate-400">Sin vencimientos próximos</td></tr>
-                ) : (
-                  vencimientos.map((v) => {
-                    const vAny = v as unknown as {
-                      id: string;
-                      fecha_vencimiento: string;
-                      vehiculos: { placas: string | null; concesiones: { numero_concesion: string; socios: { nombre_completo: string } | { nombre_completo: string }[] | null } | { numero_concesion: string; socios: { nombre_completo: string } | { nombre_completo: string }[] | null }[] | null } | { placas: string | null; concesiones: { numero_concesion: string; socios: { nombre_completo: string } | { nombre_completo: string }[] | null } | { numero_concesion: string; socios: { nombre_completo: string } | { nombre_completo: string }[] | null }[] | null }[] | null;
-                    };
-                    const vehRaw = vAny.vehiculos;
-                    const veh = Array.isArray(vehRaw) ? vehRaw[0] : vehRaw;
-                    const concRaw = veh?.concesiones;
-                    const conc = Array.isArray(concRaw) ? concRaw[0] : concRaw;
-                    const socRaw = conc?.socios;
-                    const soc = Array.isArray(socRaw) ? socRaw[0] : socRaw;
-                    const dias = diasParaVencer(v.fecha_vencimiento);
-                    return (
-                      <tr key={v.id}>
-                        <td className="px-4 py-3 text-slate-700 truncate max-w-[260px]">
-                          {soc?.nombre_completo ?? '—'}
-                        </td>
-                        <td className="px-4 py-3 mono text-slate-600 hidden md:table-cell">
-                          {conc?.numero_concesion ?? '—'}
-                        </td>
-                        <td className="px-4 py-3 mono">{veh?.placas ?? '—'}</td>
-                        <td className="px-4 py-3 num">{fmtFechaCorta(v.fecha_vencimiento)}</td>
-                        <td className={`px-4 py-3 num text-right ${dias !== null && dias < 0 ? 'crit font-semibold' : ''}`}>
-                          {dias !== null ? (dias < 0 ? `${dias}` : `${dias}`) : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+            {vencimientos.length === 0 ? (
+              <p className="p-12 text-center text-slate-400">Sin vencimientos en {dias} días 🎉</p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {vencimientos.map((v) => {
+                  const vAny = v as unknown as {
+                    id: string; fecha_vencimiento: string;
+                    vehiculos: { id: string; placas: string | null; concesiones: unknown } | { id: string; placas: string | null; concesiones: unknown }[] | null;
+                  };
+                  const veh = Array.isArray(vAny.vehiculos) ? vAny.vehiculos[0] : vAny.vehiculos;
+                  const concRaw = (veh as { concesiones?: unknown } | undefined)?.concesiones;
+                  const conc = Array.isArray(concRaw) ? concRaw[0] : concRaw;
+                  const socRaw = (conc as { socios?: unknown } | undefined)?.socios;
+                  const soc = Array.isArray(socRaw) ? socRaw[0] : socRaw;
+                  const dv = diasParaVencer(v.fecha_vencimiento);
+                  const urgente = dv !== null && dv <= 15;
+                  const row = (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm text-slate-700">
+                          {(soc as { nombre_completo?: string } | undefined)?.nombre_completo ?? '—'}
+                        </div>
+                        <div className="mono text-xs text-slate-500">
+                          {(conc as { numero_concesion?: string } | undefined)?.numero_concesion ?? '—'} · {veh?.placas ?? '—'}
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="num text-sm text-slate-600">{fmtFechaCorta(v.fecha_vencimiento)}</div>
+                        <div className={`num text-xs font-medium ${urgente ? 'text-amber-700' : 'text-slate-400'}`}>
+                          {dv !== null ? `en ${dv} días` : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                  return (
+                    <li key={v.id}>
+                      {veh?.id ? (
+                        <Link href={`/flota/${veh.id}`} className="block transition-colors hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50">
+                          {row}
+                        </Link>
+                      ) : row}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </CardBody>
         </Card>
 
@@ -112,7 +168,7 @@ export default async function DashboardPage() {
           <CardHeader title="Distribución por sitio" subtitle="Concesiones vigentes" />
           <CardBody>
             {sitios.length === 0 ? (
-              <p className="text-center text-sm text-slate-400 py-8">Sin datos</p>
+              <p className="py-8 text-center text-sm text-slate-400">Sin datos</p>
             ) : (
               <ul className="flex flex-col gap-3">
                 {sitios.slice(0, 8).map((s) => (
@@ -122,10 +178,7 @@ export default async function DashboardPage() {
                       <span className="num font-medium text-slate-900">{s.n}</span>
                     </div>
                     <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full bg-(--ink)"
-                        style={{ width: `${Math.min(100, (s.n / sitios[0].n) * 100)}%` }}
-                      />
+                      <div className="h-full bg-(--ink)" style={{ width: `${Math.min(100, (s.n / sitios[0].n) * 100)}%` }} />
                     </div>
                   </li>
                 ))}
@@ -135,7 +188,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Resumen de estado */}
+      {/* Estado del padrón */}
       <Card>
         <CardHeader title="Estado del padrón" />
         <CardBody>
@@ -150,5 +203,44 @@ export default async function DashboardPage() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+const TONE_ICON: Record<'critical' | 'warn' | 'info', string> = {
+  critical: 'bg-rose-100 text-rose-700',
+  warn: 'bg-amber-100 text-amber-700',
+  info: 'bg-slate-100 text-slate-600',
+};
+const TONE_TEXT: Record<'critical' | 'warn' | 'info', string> = {
+  critical: 'text-rose-700',
+  warn: 'text-amber-700',
+  info: 'text-slate-700',
+};
+
+function KpiLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="group block rounded-2xl transition-all hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 [&>*]:h-full [&>*]:group-hover:border-slate-300 [&>*]:group-hover:shadow-md"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function QuickAction({ href, icon, label, primary }: { href: string; icon: React.ReactNode; label: string; primary?: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+        primary
+          ? 'bg-slate-800 text-white hover:bg-slate-900'
+          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+      }`}
+    >
+      {icon}
+      {label}
+      {primary && <ArrowRight size={14} className="opacity-80" />}
+    </Link>
   );
 }
