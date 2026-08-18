@@ -1,7 +1,11 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { createSupabaseServer } from '@erp/db/client/server';
-import { statsGenerales, vencimientosProximos, distribucionPorSitio, pendientesAtencion } from '@erp/db/queries/dashboard';
+import {
+  statsGenerales, vencimientosProximos, distribucionPorSitio, pendientesAtencion,
+  vencimientosPorMes, estadoPolizas, altasBajasPorMes,
+} from '@erp/db/queries/dashboard';
+import { VencimientosPorMesChart, EstadoPolizasChart, AltasBajasChart } from './_components/DashboardCharts';
 import { KpiCard } from '@erp/ui/data';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
 import {
@@ -21,11 +25,14 @@ export default async function DashboardPage({
   const dias = RANGOS.includes(Number(sp.dias) as (typeof RANGOS)[number]) ? Number(sp.dias) : 60;
 
   const supabase = createSupabaseServer(await cookies());
-  const [stats, vencimientos, sitios, pend] = await Promise.all([
+  const [stats, vencimientos, sitios, pend, porMes, estadoPol, altasBajas] = await Promise.all([
     statsGenerales(supabase),
     vencimientosProximos(supabase, dias),
     distribucionPorSitio(supabase),
     pendientesAtencion(supabase),
+    vencimientosPorMes(supabase, 6),
+    estadoPolizas(supabase),
+    altasBajasPorMes(supabase, 6),
   ]);
 
   // Panel "Requiere atención" — solo lo que tiene pendientes, priorizado.
@@ -89,6 +96,29 @@ export default async function DashboardPage({
           </CardBody>
         </Card>
       )}
+
+      {/* Gráficas */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader title="Pólizas por vencer — próximos 6 meses" subtitle="Anticipa la carga de renovaciones." />
+          <CardBody>
+            <VencimientosPorMesChart data={porMes} />
+          </CardBody>
+        </Card>
+        <Card>
+          <CardHeader title="Estado de pólizas" />
+          <CardBody>
+            <EstadoPolizasChart data={estadoPol} />
+          </CardBody>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader title="Altas y bajas del padrón" subtitle="Movimiento de socios en los últimos 6 meses." />
+        <CardBody>
+          <AltasBajasChart data={altasBajas} />
+        </CardBody>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Vencimientos próximos (2/3) */}
