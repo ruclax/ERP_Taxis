@@ -5,6 +5,7 @@ import {
   statsGenerales, vencimientosProximos, distribucionPorSitio, pendientesAtencion,
   vencimientosPorMes, estadoPolizas, altasBajasPorMes,
 } from '@erp/db/queries/dashboard';
+import { conteosVencimientos } from '@erp/db/queries/polizas';
 import { VencimientosPorMesChart, EstadoPolizasChart, AltasBajasChart } from './_components/DashboardCharts';
 import { KpiCard } from '@erp/ui/data';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
@@ -14,26 +15,26 @@ import {
 } from 'lucide-react';
 import { fmtFechaCorta, diasParaVencer } from '@erp/shared/formatters';
 
-const RANGOS = [30, 60, 90] as const;
-
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ dias?: string }>;
-}) {
-  const sp = await searchParams;
-  const dias = RANGOS.includes(Number(sp.dias) as (typeof RANGOS)[number]) ? Number(sp.dias) : 60;
-
+export default async function DashboardPage() {
   const supabase = createSupabaseServer(await cookies());
-  const [stats, vencimientos, sitios, pend, porMes, estadoPol, altasBajas] = await Promise.all([
+  const [stats, vencimientos, sitios, pend, porMes, estadoPol, altasBajas, conteosVenc] = await Promise.all([
     statsGenerales(supabase),
-    vencimientosProximos(supabase, dias),
+    vencimientosProximos(supabase, 30),
     distribucionPorSitio(supabase),
     pendientesAtencion(supabase),
     vencimientosPorMes(supabase, 6),
     estadoPolizas(supabase),
     altasBajasPorMes(supabase, 6),
+    conteosVencimientos(supabase),
   ]);
+
+  // Indicadores de vencimiento por ventana → llevan a la lista filtrada de Pólizas.
+  const vencInd = [
+    { key: 'vencidas', label: 'Vencidas', n: conteosVenc.vencidas, href: '/polizas?vencidas=1', tone: 'critical' as const },
+    { key: '10', label: '≤ 10 días', n: conteosVenc.d10, href: '/polizas?vence=10', tone: 'warn' as const },
+    { key: '30', label: '≤ 30 días', n: conteosVenc.d30, href: '/polizas?vence=30', tone: 'warn' as const },
+    { key: '60', label: '≤ 60 días', n: conteosVenc.d60, href: '/polizas?vence=60', tone: 'default' as const },
+  ];
 
   // Panel "Requiere atención" — solo lo que tiene pendientes, priorizado.
   const atencion = [
@@ -124,31 +125,29 @@ export default async function DashboardPage({
         {/* Vencimientos próximos (2/3) */}
         <Card className="lg:col-span-2">
           <CardHeader
-            title="Vencimientos próximos"
-            subtitle={`Pólizas que vencen en los próximos ${dias} días`}
-            action={
-              <div className="flex gap-1" role="group" aria-label="Rango de días">
-                {RANGOS.map((d) => (
-                  <Link
-                    key={d}
-                    href={`/dashboard?dias=${d}`}
-                    scroll={false}
-                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                      d === dias ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {d}d
-                  </Link>
-                ))}
-              </div>
-            }
+            title="Vencimientos de pólizas"
+            subtitle="Toca un indicador para ver la lista."
+            action={<Link href="/polizas" className="text-sm font-medium text-blue-700 hover:underline">Ver todas →</Link>}
           />
           <CardBody className="!p-0">
+            {/* Indicadores por ventana → lista filtrada */}
+            <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
+              {vencInd.map((ind) => (
+                <Link
+                  key={ind.key}
+                  href={ind.href}
+                  className={`rounded-xl border bg-white px-3 py-2.5 transition-all hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${VENC_BORDER[ind.tone]}`}
+                >
+                  <div className={`num text-2xl font-bold tabular-nums ${VENC_VALUE[ind.tone]}`}>{ind.n.toLocaleString('es-MX')}</div>
+                  <div className="mt-0.5 text-xs text-slate-500">{ind.label}</div>
+                </Link>
+              ))}
+            </div>
             {vencimientos.length === 0 ? (
-              <p className="p-12 text-center text-slate-400">Sin vencimientos en {dias} días 🎉</p>
+              <p className="px-4 pb-8 text-center text-sm text-slate-400">Sin vencimientos en 30 días 🎉</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
-                {vencimientos.map((v) => {
+              <ul className="divide-y divide-slate-100 border-t border-slate-100">
+                {vencimientos.slice(0, 6).map((v) => {
                   const vAny = v as unknown as {
                     id: string; fecha_vencimiento: string;
                     vehiculos: { id: string; placas: string | null; concesiones: unknown } | { id: string; placas: string | null; concesiones: unknown }[] | null;
@@ -235,6 +234,17 @@ export default async function DashboardPage({
     </div>
   );
 }
+
+const VENC_BORDER: Record<'critical' | 'warn' | 'default', string> = {
+  critical: 'border-rose-200',
+  warn: 'border-amber-200',
+  default: 'border-slate-200',
+};
+const VENC_VALUE: Record<'critical' | 'warn' | 'default', string> = {
+  critical: 'text-rose-700',
+  warn: 'text-amber-700',
+  default: 'text-slate-900',
+};
 
 const TONE_ICON: Record<'critical' | 'warn' | 'info', string> = {
   critical: 'bg-rose-100 text-rose-700',
