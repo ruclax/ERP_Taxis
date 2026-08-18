@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Modal, Button, Input } from '@erp/ui/primitives';
 import { PolizaEstadoPill } from '@erp/ui/data';
 import { Car, Shield, Pencil, Plus } from 'lucide-react';
-import { fmtFechaCorta } from '@erp/shared/formatters';
+import { fmtFechaCorta, estadoPolizaVigente } from '@erp/shared/formatters';
 import type { Documento } from '@erp/db/queries/documentos';
 import { guardarVehiculoAction, guardarPolizaAction } from '../flota-actions';
 import DocumentosPanel from './DocumentosPanel';
@@ -73,7 +73,7 @@ export default function VehiculoPolizaPanel({
                 <span className="mono text-slate-700">{poliza.numero_poliza}</span>
                 <span className="text-slate-500">{poliza.compania}</span>
                 <span className="text-slate-500">vence {fmtFechaCorta(poliza.fecha_vencimiento)}</span>
-                <PolizaEstadoPill estado={poliza.estado} />
+                <PolizaEstadoPill estado={estadoPolizaVigente(poliza.fecha_vencimiento, poliza.estado)} />
               </div>
             ) : (
               <div className="text-xs text-slate-400">Sin póliza registrada</div>

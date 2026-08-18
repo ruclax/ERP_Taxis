@@ -5,7 +5,7 @@ import { obtenerSocio, listarHistorialEstatus } from '@erp/db/queries/socios';
 import { listarDocumentosExpediente, type Documento } from '@erp/db/queries/documentos';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
 import { SocioEstatusPill, ConcesionEstadoPill } from '@erp/ui/data';
-import { fmtFechaCorta, antiguedadTexto } from '@erp/shared/formatters';
+import { fmtFechaCorta, antiguedadTexto, estadoPolizaVigente } from '@erp/shared/formatters';
 import { ChevronRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import ChoferesPanel from './_components/ChoferesPanel';
@@ -394,8 +394,9 @@ function alertasDe(socio: Record<string, unknown>, adeudosPend: number): Array<{
   for (const c of concs) {
     for (const v of ((c.vehiculos as Array<Record<string, unknown>>) ?? [])) {
       for (const p of ((v.polizas as Array<Record<string, unknown>>) ?? [])) {
-        if (p.estado === 'VENCIDA') polVencida = true;
-        else if (p.estado === 'POR_VENCER') polPorVencer = true;
+        const est = estadoPolizaVigente(p.fecha_vencimiento as string | null, p.estado as string | null);
+        if (est === 'VENCIDA') polVencida = true;
+        else if (est === 'POR_VENCER') polPorVencer = true;
       }
     }
   }

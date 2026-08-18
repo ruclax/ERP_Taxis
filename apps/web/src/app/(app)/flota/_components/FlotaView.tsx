@@ -12,7 +12,7 @@ import { useRecentSearches } from '@erp/ui/hooks';
 import {
   X, Car, CheckCircle, CarFront, AlertTriangle, UserMinus, Tag, CircleSlash, SlidersHorizontal,
 } from 'lucide-react';
-import { fmtFechaCorta } from '@erp/shared/formatters';
+import { fmtFechaCorta, estadoPolizaVigente } from '@erp/shared/formatters';
 import { getBrowserSupabase } from '@erp/db/client';
 import { sugerirVehiculos } from '@erp/db/queries/vehiculos';
 import type { ConteosFlota } from '@erp/db/queries/vehiculos';
@@ -332,7 +332,7 @@ export default function FlotaView({
                   const p = v.polizas?.[0];
                   return p ? (
                     <div className="flex flex-col gap-1">
-                      <PolizaEstadoPill estado={p.estado} />
+                      <PolizaEstadoPill estado={estadoPolizaVigente(p.fecha_vencimiento, p.estado)} />
                       <span className="text-xs text-slate-500">{fmtFechaCorta(p.fecha_vencimiento)}</span>
                     </div>
                   ) : <span className="text-xs text-slate-400">Sin póliza</span>;

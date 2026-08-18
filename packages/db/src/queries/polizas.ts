@@ -14,11 +14,12 @@ function masDias(n: number) {
 /** Conteos por ventana de vencimiento (para indicadores del tablero y de la lista). */
 export async function conteosVencimientos(sb: SB) {
   const hoy = iso(new Date());
+  const base = () => sb.from('polizas').select('id', { count: 'exact', head: true }).neq('estado', 'CANCELADA');
   const [{ count: vencidas }, { count: d10 }, { count: d30 }, { count: d60 }] = await Promise.all([
-    sb.from('polizas').select('id', { count: 'exact', head: true }).lt('fecha_vencimiento', hoy),
-    sb.from('polizas').select('id', { count: 'exact', head: true }).gte('fecha_vencimiento', hoy).lte('fecha_vencimiento', masDias(10)),
-    sb.from('polizas').select('id', { count: 'exact', head: true }).gte('fecha_vencimiento', hoy).lte('fecha_vencimiento', masDias(30)),
-    sb.from('polizas').select('id', { count: 'exact', head: true }).gte('fecha_vencimiento', hoy).lte('fecha_vencimiento', masDias(60)),
+    base().lt('fecha_vencimiento', hoy),
+    base().gte('fecha_vencimiento', hoy).lte('fecha_vencimiento', masDias(10)),
+    base().gte('fecha_vencimiento', hoy).lte('fecha_vencimiento', masDias(30)),
+    base().gte('fecha_vencimiento', hoy).lte('fecha_vencimiento', masDias(60)),
   ]);
   return { vencidas: vencidas ?? 0, d10: d10 ?? 0, d30: d30 ?? 0, d60: d60 ?? 0 };
 }
@@ -29,7 +30,7 @@ export async function listarPolizasVencimiento(sb: SB, opts: { vencidas?: boolea
   let q = sb.from('polizas').select(`
     id, numero_poliza, compania, fecha_vencimiento, estado,
     vehiculos(id, placas, concesiones!concesion_actual_id(numero_concesion, socios(nombre_completo)))
-  `);
+  `).neq('estado', 'CANCELADA');
 
   if (opts.vencidas) {
     q = q.lt('fecha_vencimiento', hoy).order('fecha_vencimiento', { ascending: false });

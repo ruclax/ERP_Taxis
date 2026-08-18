@@ -5,6 +5,8 @@ import type { Database } from '../../types/database';
 type SB = SupabaseClient<Database, any, any>;
 
 export async function statsGenerales(sb: SB) {
+  // Estado de póliza derivado por fecha (tiempo real), no del campo `estado` guardado.
+  const hoyISO = new Date().toISOString().slice(0, 10);
   const [
     { count: socios },
     { count: activos },
@@ -19,10 +21,10 @@ export async function statsGenerales(sb: SB) {
     sb.from('socios').select('id', { count: 'exact', head: true }).eq('estatus', 'ACTIVO'),
     sb.from('vehiculos').select('id', { count: 'exact', head: true }).eq('estatus', 'ACTIVO'),
     sb.from('concesiones').select('id', { count: 'exact', head: true }).eq('estado', 'VIGENTE'),
-    sb.from('polizas').select('id', { count: 'exact', head: true }).eq('estado', 'VIGENTE'),
-    sb.from('polizas').select('id', { count: 'exact', head: true }).eq('estado', 'VENCIDA'),
+    sb.from('polizas').select('id', { count: 'exact', head: true }).neq('estado', 'CANCELADA').gte('fecha_vencimiento', hoyISO),
+    sb.from('polizas').select('id', { count: 'exact', head: true }).neq('estado', 'CANCELADA').lt('fecha_vencimiento', hoyISO),
     sb.from('concesiones').select('id', { count: 'exact', head: true }).eq('es_independiente', true),
-    sb.from('antidoping').select('id', { count: 'exact', head: true }).lte('fecha_vencimiento', new Date().toISOString().slice(0, 10)),
+    sb.from('antidoping').select('id', { count: 'exact', head: true }).lte('fecha_vencimiento', hoyISO),
   ]);
 
   return {
@@ -120,12 +122,17 @@ export async function vencimientosPorMes(sb: SB, meses = 6) {
   return bucketPorMes(data ?? [], (r) => (r as { fecha_vencimiento: string }).fecha_vencimiento, start, meses);
 }
 
-/** Conteo de pólizas por estado (para dona). */
+/** Conteo de pólizas por estado, derivado por fecha (tiempo real) — para la dona. */
 export async function estadoPolizas(sb: SB) {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const en30 = new Date();
+  en30.setDate(en30.getDate() + 30);
+  const en30s = en30.toISOString().slice(0, 10);
+  const base = () => sb.from('polizas').select('id', { count: 'exact', head: true }).neq('estado', 'CANCELADA');
   const [{ count: vig }, { count: pv }, { count: ven }] = await Promise.all([
-    sb.from('polizas').select('id', { count: 'exact', head: true }).eq('estado', 'VIGENTE'),
-    sb.from('polizas').select('id', { count: 'exact', head: true }).eq('estado', 'POR_VENCER'),
-    sb.from('polizas').select('id', { count: 'exact', head: true }).eq('estado', 'VENCIDA'),
+    base().gt('fecha_vencimiento', en30s),                          // vigente: vence en +30 días
+    base().gte('fecha_vencimiento', hoy).lte('fecha_vencimiento', en30s), // por vencer: hoy..+30
+    base().lt('fecha_vencimiento', hoy),                            // vencida: antes de hoy
   ]);
   return { vigente: vig ?? 0, por_vencer: pv ?? 0, vencida: ven ?? 0 };
 }

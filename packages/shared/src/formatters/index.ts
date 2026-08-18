@@ -40,6 +40,19 @@ export function estadoVencimiento(dias: number | null, umbralPorVencer = 30): 'V
   return 'VIGENTE';
 }
 
+/**
+ * Estado real de una póliza, derivado de la fecha de vencimiento (tiempo real).
+ * El estado NO se guarda: se calcula al leer, así nunca queda desactualizado.
+ * `CANCELADA` sí es un estado manual y se respeta si viene guardado.
+ */
+export function estadoPolizaVigente(
+  fechaVencimiento: string | Date | null | undefined,
+  estadoGuardado?: string | null,
+): 'VIGENTE' | 'POR_VENCER' | 'VENCIDA' | 'CANCELADA' | 'DESCONOCIDO' {
+  if (estadoGuardado === 'CANCELADA') return 'CANCELADA';
+  return estadoVencimiento(diasParaVencer(fechaVencimiento));
+}
+
 // ── Monedas ──
 const MXN = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 });
 
