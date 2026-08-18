@@ -7,7 +7,6 @@ import {
 } from '@erp/db/queries/dashboard';
 import { conteosVencimientos } from '@erp/db/queries/polizas';
 import { VencimientosPorMesChart, EstadoPolizasChart, AltasBajasChart } from './_components/DashboardCharts';
-import PrimerosPasos from './_components/PrimerosPasos';
 import { KpiCard } from '@erp/ui/data';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
 import {
@@ -50,7 +49,6 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       {/* Accesos rápidos */}
       <div className="flex flex-wrap gap-2">
-        <PrimerosPasos />
         <QuickAction href="/padron/nuevo" icon={<UserPlus size={16} />} label="Alta de socio" primary />
         <QuickAction href="/flota" icon={<Car size={16} />} label="Flota" />
         <QuickAction href="/sitios" icon={<MapPin size={16} />} label="Sitios" />

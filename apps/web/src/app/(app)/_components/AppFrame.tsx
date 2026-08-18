@@ -8,6 +8,7 @@ import { ROLES, ROL_CODIGOS, type Modulo, rolPuedeVer, rolSoloLectura } from '@e
 import type { RolCodigo } from '@erp/db';
 import { MODULO_LABELS } from '@erp/shared/constants';
 import { getBrowserSupabase } from '@erp/db/client';
+import GuiaContextual from './GuiaContextual';
 import {
   LayoutDashboard, Users, Car, IdCard, Shield,
   HeartHandshake, Wallet, AlertOctagon, Gavel, ClipboardList, LogOut, User,
@@ -238,6 +239,7 @@ export function AppFrame({ nombreDisplay, esSuperadmin, roles, modulosPorRol, ch
         </div>
       )}
       {children}
+      <GuiaContextual />
     </AppShell>
   );
 }
