@@ -58,3 +58,29 @@
 - **Matching de nombres = revisión humana** (nombres informales/parciales).
 - **Respaldo**: exportar la tabla afectada antes de cada corrección masiva.
 - Correcciones idempotentes y en transacción donde aplique.
+
+## Estados a vigilar — escaneo de consistencia (2026-08-18)
+
+> **Principio:** todo estado que dependa de "hoy" se calcula al leer, nunca se guarda.
+> Solo se guardan estados que son decisiones humanas (CANCELADA, BAJA, FALLECIDO).
+
+### A. Estados derivados de fecha (riesgo de quedar viejos)
+| Estado | Hallazgo | Acción |
+|---|---|---|
+| `polizas.estado` | Salía "vigente" estando vencida | ✅ **HECHO** — se deriva de `fecha_vencimiento` al leer (helper `estadoPolizaVigente`) |
+| `soc_veint` (20+ años) | 339 desfasados | ✅ **HECHO** — recomputado desde antigüedad (migración 054) |
+| Licencias vencidas | 380 `es_actual` vencidas | ℹ️ Hecho operativo (la UI ya deriva por fecha vía vista de choferes); no es bug de código |
+| Revista vehicular | `fecha_vencimiento`/`prorroga_hasta` sin estado derivado en UI | 🔲 Derivar por fecha donde se muestre |
+| `adeudos.estatus` / `mensualidades_cuotas.estatus` | Estado de pago guardado + fecha_venc | 🔲 Al activar cobranza: derivar "al corriente/moroso" por fecha, no guardar |
+
+### B. Consistencia entre entidades
+| Chequeo | Hallazgo | Acción |
+|---|---|---|
+| Concesiones VIGENTE con titular fallecido/baja | 3 | 🔲 Revisar (¿sucesión pendiente?) |
+| Contratos de chofer activos sin vehículo en su concesión | 22 | 🔲 Revisar consistencia |
+| Vehículos ACTIVO con concesión no vigente | 0 | ✅ |
+| Sitios con delegado no-activo | 0 | ✅ |
+
+### C. Guardián (roadmap)
+Convertir este escaneo en un `pnpm verify:datos` que corra los chequeos A+B y avise
+cuando algo se desincronice. Roza el módulo de **Alertas (de pago)**.
