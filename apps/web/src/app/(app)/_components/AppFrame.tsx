@@ -11,7 +11,7 @@ import { getBrowserSupabase } from '@erp/db/client';
 import {
   LayoutDashboard, Users, Car, IdCard, Shield,
   HeartHandshake, Wallet, AlertOctagon, Gavel, ClipboardList, LogOut, User,
-  Eye, ExternalLink, ChevronDown, Settings, MapPin,
+  Eye, ExternalLink, ChevronDown, MapPin,
 } from 'lucide-react';
 
 interface RolInfo {
@@ -200,11 +200,6 @@ export function AppFrame({ nombreDisplay, esSuperadmin, roles, modulosPorRol, ch
                   tone="accent"
                 />
               )}
-              <Sidebar.Action
-                icon={<Settings size={14} />}
-                label="Configuración"
-                href="/mipanel"
-              />
               <Sidebar.Action
                 icon={<LogOut size={14} />}
                 label="Cerrar sesión"
