@@ -5,7 +5,7 @@ import { createSupabaseServer } from '@erp/db/client/server';
 import { obtenerVehiculo } from '@erp/db/queries/vehiculos';
 import { listarDocumentos } from '@erp/db/queries/documentos';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
-import { ChevronRight, User } from 'lucide-react';
+import { ChevronRight, User, Printer } from 'lucide-react';
 import VehiculoPolizaPanel, { type Vehiculo, type Poliza } from '../../padron/[id]/_components/VehiculoPolizaPanel';
 import ChoferesPanel from '../../padron/[id]/_components/ChoferesPanel';
 import DocumentosPanel from '../../padron/[id]/_components/DocumentosPanel';
@@ -99,6 +99,14 @@ export default async function VehiculoDetallePage({ params }: { params: Promise<
             </Link>
           )}
         </div>
+        <a
+          href={`/imprimir/vehiculo/${id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <Printer size={15} /> <span className="hidden sm:inline">Imprimir</span>
+        </a>
       </div>
 
       {/* Vehículo y póliza (reusa el panel del expediente) */}

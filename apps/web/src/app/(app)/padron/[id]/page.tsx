@@ -6,7 +6,7 @@ import { listarDocumentosExpediente, type Documento } from '@erp/db/queries/docu
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
 import { SocioEstatusPill, ConcesionEstadoPill } from '@erp/ui/data';
 import { fmtFechaCorta, antiguedadTexto, estadoPolizaVigente } from '@erp/shared/formatters';
-import { ChevronRight, AlertTriangle } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Printer } from 'lucide-react';
 import Link from 'next/link';
 import ChoferesPanel from './_components/ChoferesPanel';
 import DocumentosPanel from './_components/DocumentosPanel';
@@ -105,6 +105,14 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <a
+              href={`/imprimir/socio/${id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <Printer size={15} /> <span className="hidden sm:inline">Imprimir</span>
+            </a>
             <AccionesMenu />
             <EditarSocioModal socioId={id} socio={socioEditable(socio)} />
           </div>
