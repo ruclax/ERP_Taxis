@@ -1,90 +1,69 @@
-# ERP Taxi — Sindicato de Choferes de Sitio de Nuevo Laredo
+# ERP — Sindicato de Choferes de Automóviles de Sitio y Camiones de Pasajeros de Nuevo Laredo
 
-Sistema integral de gestión sindical: padrón de socios, flota vehicular, pólizas, tesorería, paquete funerario, asambleas, honor y justicia.
+Sistema integral de gestión sindical: padrón de agremiados, concesiones, flota vehicular, pólizas, sitios y delegados, tesorería, y áreas de gobernanza (asambleas, honor y justicia, funerario).
+
+> Documentación de gobernanza técnica: **[CLAUDE.md](CLAUDE.md)** (cómo funciona la app y cómo trabajar en ella).
 
 ## Plataformas
 
-- **Web** — Next.js 15 (App Router) en Vercel
-- **Móvil** — Expo / React Native (Android + iOS) vía EAS Build
-- **Escritorio** — Tauri 2 (Windows + macOS + Linux)
-- **Backend** — Supabase (PostgreSQL + Auth + Storage)
+- **Web** — Next.js 16 (App Router, React 19) en Vercel
+- **Panel de administración** — Next.js 16 (app aparte: usuarios, roles, branding, auditoría)
+- **Móvil** — Expo / React Native (Android + iOS)
+- **Escritorio** — Tauri 2
+- **Backend** — Supabase (PostgreSQL 17 + Auth + Storage + RLS)
 
 ## Estructura del repositorio
 
 ```
 ERP_Taxi/
 ├── apps/
-│   ├── web/         # Next.js 15
-│   ├── mobile/      # Expo SDK 52
+│   ├── web/         # App principal (Next.js 16)
+│   ├── admin/       # Panel de administración (Next.js 16)
+│   ├── mobile/      # Expo
 │   └── desktop/     # Tauri 2
 ├── packages/
-│   ├── shared/      # Utilidades, validadores, constantes
-│   ├── db/          # Cliente Supabase + queries + tipos
-│   ├── auth/        # Hooks de autenticación y RBAC
-│   └── ui/          # Componentes compartidos (NativeWind)
+│   ├── shared/      # Utilidades, validadores, formatters, constantes
+│   ├── db/          # Cliente Supabase + queries + tipos generados
+│   ├── auth/        # RBAC (roles, módulos)
+│   └── ui/          # Componentes compartidos
 ├── supabase/
-│   └── migrations/  # Esquema SQL versionado
-├── scripts/         # CLI tools (migraciones, importador CSV)
-├── prototype/       # Prototipo HTML/JSX original (referencia)
+│   └── migrations/  # Esquema SQL versionado (aplicado con pnpm db:migrate)
+├── scripts/         # CLI (migrar, importar CSV, crear usuarios, verificar)
+├── prototype/       # Prototipo HTML original (referencia visual)
 ├── uploads/         # CSVs fuente del padrón (NO versionados)
 └── docs/            # Documentación del proyecto
 ```
 
 ## Setup inicial
 
-1. **Instala pnpm y Node 20+**:
-   ```bash
-   npm install -g pnpm@9
-   ```
-
-2. **Instala dependencias**:
-   ```bash
-   pnpm install
-   ```
-
-3. **Configura Supabase** — sigue [docs/supabase-setup.md](docs/supabase-setup.md) para crear `.env.local` con tus credenciales.
-
-4. **Verifica conexión**:
-   ```bash
-   pnpm db:check
-   ```
-
-5. **Aplica migraciones**:
-   ```bash
-   pnpm db:migrate
-   ```
-
-6. **Carga datos del padrón**:
-   ```bash
-   pnpm db:seed
-   ```
-
-7. **Genera tipos TypeScript**:
-   ```bash
-   pnpm db:types
-   ```
-
-8. **Crea el primer usuario admin**:
-   ```bash
-   pnpm db:admin
-   ```
+```bash
+npm install -g pnpm@9        # 1. pnpm (Node 20+)
+pnpm install                 # 2. dependencias
+# 3. crea .env.local siguiendo docs/supabase-setup.md
+pnpm db:check                # 4. verifica conexión a Supabase
+pnpm db:migrate              # 5. aplica migraciones
+pnpm db:seed                 # 6. (opcional) carga datos del padrón
+pnpm db:types                # 7. genera tipos TypeScript
+pnpm db:admin-plataforma     # 8. crea la cuenta administradora
+```
 
 ## Comandos útiles
 
 | Comando | Descripción |
 |---|---|
-| `pnpm dev` | Levanta todas las apps en modo desarrollo |
-| `pnpm --filter web dev` | Solo la app web |
-| `pnpm --filter mobile start` | Solo la app móvil (Expo) |
-| `pnpm --filter desktop tauri:dev` | Solo la app de escritorio (Tauri) |
-| `pnpm build` | Build de producción |
+| `pnpm --filter web dev` | App web en desarrollo |
+| `pnpm --filter admin dev` | Panel admin en desarrollo |
+| `pnpm build` | Build de producción (web + admin) |
 | `pnpm typecheck` | TypeScript en todos los workspaces |
+| `pnpm verify:rbac` | Verifica consistencia RBAC (rbac.ts ↔ tabla `roles`) |
 | `pnpm db:migrate` | Aplica migraciones pendientes |
-| `pnpm db:reset` | (Dev only) Reinicia el schema |
+| `pnpm db:superadmin` / `db:admin-plataforma` / `db:admin` | Crea usuarios (god-mode / administrador / Sec. General) |
 
-## Documentación adicional
+## Documentación
 
-- [docs/supabase-setup.md](docs/supabase-setup.md) — Configuración paso a paso de Supabase
-- [docs/schema.md](docs/schema.md) — Diagrama ER y descripción de tablas
-- [docs/rbac.md](docs/rbac.md) — Mapeo de roles y permisos
-- [prototype/](prototype/) — Prototipo HTML original (sirve como referencia visual)
+- **[CLAUDE.md](CLAUDE.md)** — arquitectura, convenciones y flujo de trabajo (empieza aquí).
+- [docs/supabase-setup.md](docs/supabase-setup.md) — configuración de `.env.local`.
+- [docs/handover.md](docs/handover.md) — entrega y puesta en producción (go-live).
+- [docs/gestion-cuentas.md](docs/gestion-cuentas.md) — cómo el cliente administra cuentas y roles.
+- [docs/modelo-datos.html](docs/modelo-datos.html) — mapa funcional de la base de datos.
+- [docs/modelo-datos-reconciliacion.md](docs/modelo-datos-reconciliacion.md) · [docs/auditoria-datos.md](docs/auditoria-datos.md) — modelo de datos, reconciliación y calidad de datos.

@@ -99,10 +99,10 @@ Si falla:
 Una vez que `pnpm db:check` pase, puedes continuar con:
 
 ```bash
-pnpm db:migrate     # Aplica el esquema completo (18 migraciones)
-pnpm db:seed        # Importa los CSVs del padrón
-pnpm db:types       # Genera tipos TypeScript desde el schema
-pnpm db:admin       # Crea el primer usuario admin (Sec. General)
+pnpm db:migrate         # Aplica las migraciones pendientes de supabase/migrations/
+pnpm db:seed            # Importa los CSVs del padrón
+pnpm db:types           # Genera tipos TypeScript desde el schema
+pnpm db:admin-plataforma # Crea la cuenta administradora (gestiona usuarios/roles)
 ```
 
 ---

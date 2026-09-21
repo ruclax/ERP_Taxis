@@ -30,12 +30,13 @@
 9. En el proyecto de la **web**, agregar la variable `NEXT_PUBLIC_ADMIN_URL` con la URL del panel admin → así aparece el botón “Abrir panel admin”.
 
 ### Paso 4 — Crear la cuenta del administrador del cliente
-10. Ejecutar (una sola vez):
+10. Usar el script existente (una sola vez). Para la cuenta que **gestiona usuarios y roles**:
     ```
-    node scripts/crear-admin.mjs correo@cliente.com "Nombre del Administrador"
+    ADMIN_EMAIL=correo@cliente.com ADMIN_NOMBRE="Nombre del Administrador" pnpm db:admin-plataforma
     ```
-    Entrega las credenciales al cliente. Desde esa cuenta gestionará a los demás.
-    Cómo administra cuentas y roles: ver **[gestion-cuentas.md](gestion-cuentas.md)**.
+    Genera/pide una contraseña y la muestra una vez — entrégala al cliente.
+    (`pnpm db:admin` = cuenta del Secretario General; `pnpm db:superadmin` = god-mode del desarrollador.)
+    Cómo administra cuentas y roles desde el panel: ver **[gestion-cuentas.md](gestion-cuentas.md)**.
 
 ### Paso 5 — Dominio propio *(opcional, recomendado para imagen)*
 11. Registrar un dominio (ej. `sindicatochoferesnld.mx`, ~$15/año que paga el cliente), apuntarlo a Vercel (web y admin) y actualizar el **Site URL** en Supabase.
