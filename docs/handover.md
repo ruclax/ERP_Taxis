@@ -1,48 +1,59 @@
-# Entrega (Handover) — Plataforma del Sindicato
+# Entrega (Handover) y puesta en producción
 
 > Sindicato de Choferes de Automóviles de Sitio y Camiones de Pasajeros de Nuevo Laredo.
-> Estado: **plataforma base entregable**. Este documento resume qué está listo, los pasos
-> de seguridad previos a la entrega, y cómo operar la plataforma.
+> Runbook para efectuar la entrega con el cliente. La plataforma base está **completa y certificada**;
+> aquí están los pasos de infraestructura, seguridad y cuentas para el **go-live**.
 
-## 1. Estado de la entrega
+## Estado
 
-**✅ Contrato base (Fase 3 — Expediente Digital) — completo y certificado**
-- Ciclo de vida del agremiado (alta, edición, flota, bajas/estatus, documentos).
-- Verificaciones en verde: `pnpm verify:fases` (36/0), `pnpm verify:rbac`, `pnpm typecheck` (6/6), `pnpm build` (2/2).
-- Desplegado en Vercel.
+**✅ Listo:** Fase 3 (Expediente Digital) certificada (`verify:fases` 36/0, `verify:rbac`, `typecheck` 6/6, `build` 2/2) · tablero interactivo · pólizas con estado en tiempo real · impresión/PDF · Centro de Ayuda + Guía contextual · datos migrados y rectificados · app **web** desplegada en Vercel.
 
-**✅ Valor agregado incluido**
-- Tablero interactivo (KPIs clicables, “Requiere atención”, gráficas, indicadores de vencimiento).
-- Lista real de Pólizas con estado en tiempo real (derivado por fecha).
-- Impresión / PDF de expediente y ficha de vehículo, y manual de usuario.
-- Centro de Ayuda + Guía contextual (botón de ayuda en toda la plataforma).
-- Rectificación de datos: limpieza de sitios (87→41), 16 delegados asignados, `soc_veint` corregido.
+**Infraestructura (ANEXO 1):** Base de datos + servidor nube en **Supabase ≈ $25 USD/mes**, con disponibilidad y respaldos — **costo a cargo del cliente**. (Pasarela de pagos y SMS solo aplican al activar los módulos de pago.)
 
-## 2. 🔴 Pasos de seguridad ANTES de entregar (panel de Supabase)
+---
 
-Estos son de configuración (no de código) y **deben hacerse antes de dar acceso al cliente**:
+## Proceso de entrega — pasos en orden
 
-1. **Rotar la contraseña de la base de datos** — la anterior quedó expuesta en el historial de git. *(Prioridad alta.)*
-   Supabase → Project Settings → Database → Reset database password. Actualizar `DATABASE_URL` en `.env.local` y en Vercel.
-2. **Activar protección de contraseñas filtradas** — Authentication → Providers → Password → “Leaked password protection”.
-3. **Fijar la URL del sitio** — Authentication → URL Configuration → Site URL = `https://erp-taxis-web.vercel.app`.
+### Paso 1 — Infraestructura y pago (Supabase)
+1. Subir el proyecto Supabase a **plan Pro (~$25 USD/mes)** → habilita **respaldos automáticos diarios** y evita que la BD se pause por inactividad (el Free tier no sirve para producción).
+2. **Titularidad/facturación:** decidir si el proyecto se **transfiere a una organización del cliente** (su tarjeta paga) o lo pagas tú y te reembolsan. Recomendado: organización del cliente, y agregar al desarrollador como colaborador para soporte.
+3. Verificar en Supabase que los **respaldos** queden activos.
 
-## 3. Cómo operar la plataforma
+### Paso 2 — Seguridad (panel de Supabase)
+4. **Rotar la contraseña de la base de datos** (la anterior quedó en el historial de git) → actualizar `DATABASE_URL` en `.env.local` y en las variables de Vercel. *(Prioridad alta.)*
+5. Activar **protección de contraseñas filtradas** (Authentication → Providers → Password).
+6. Fijar **Site URL** (Authentication → URL Configuration) = URL de la web (hoy `https://erp-taxis-web.vercel.app`).
+7. *(Recomendado)* Configurar **SMTP propio** para los correos de recuperación (Authentication → SMTP Settings; Resend o SendGrid tienen plan gratuito). Sin esto se usa el correo por defecto de Supabase, con límite bajo y remitente genérico.
 
-- **Aplicar cambios de base de datos**: `pnpm db:migrate` (aplica las migraciones nuevas de `supabase/migrations/`, transaccional, idempotente).
-- **Desplegar**: cada push a `main` despliega solo en Vercel.
-- **Crear la cuenta del administrador del cliente**: registrarlo en Supabase Auth y ligarlo a un socio en `usuarios_perfil`, con rol `superadmin` o `admin_plataforma` en `usuarios_roles`.
-- **Roles y permisos**: se administran desde el panel admin; la web respeta lo que se configure (menú y accesos por rol).
+### Paso 3 — Desplegar el Panel de Administración
+8. El panel `apps/admin` ya tiene su `vercel.json`. Crear un **proyecto Vercel** apuntando a la carpeta `apps/admin`, con las variables de entorno: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`.
+9. En el proyecto de la **web**, agregar la variable `NEXT_PUBLIC_ADMIN_URL` con la URL del panel admin → así aparece el botón “Abrir panel admin”.
 
-## 4. Pendientes documentados (roadmap, NO bloquean la entrega)
+### Paso 4 — Crear la cuenta del administrador del cliente
+10. Ejecutar (una sola vez):
+    ```
+    node scripts/crear-admin.mjs correo@cliente.com "Nombre del Administrador"
+    ```
+    Entrega las credenciales al cliente. Desde esa cuenta gestionará a los demás.
+    Cómo administra cuentas y roles: ver **[gestion-cuentas.md](gestion-cuentas.md)**.
 
-Ver [auditoria-datos.md](auditoria-datos.md) y [modelo-datos-reconciliacion.md](modelo-datos-reconciliacion.md):
-- Derivar por fecha la vigencia de la **revista vehicular**.
-- Reconciliar **RFC/CURP** faltantes desde el padrón fuente (#1 Agremiados).
-- Revisar: **3 concesiones VIGENTE con titular fallecido/baja** y **22 contratos de chofer sin vehículo**.
-- Guardián `verify:datos` (roza el módulo de Alertas, de pago).
+### Paso 5 — Dominio propio *(opcional, recomendado para imagen)*
+11. Registrar un dominio (ej. `sindicatochoferesnld.mx`, ~$15/año que paga el cliente), apuntarlo a Vercel (web y admin) y actualizar el **Site URL** en Supabase.
 
-## 5. Módulos de pago (fuera del contrato base)
+### Paso 6 — Capacitación y cierre
+12. Entregar el **manual** (en la plataforma: Ayuda → “Descargar manual PDF”) y la **guía de cuentas** ([gestion-cuentas.md](gestion-cuentas.md)).
+13. Sesión breve de capacitación con el administrador del cliente.
 
-Mensualidades/Cobranza, Portal del Agremiado, Alertas, Credenciales — disponibles como
-siguiente fase. La base actual y la calidad de datos dejan el terreno listo para ellos.
+---
+
+## Operación continua
+
+- **Cambios de base de datos:** `pnpm db:migrate` (aplica migraciones nuevas, transaccional).
+- **Despliegue:** cada push a `main` despliega en Vercel (web y admin).
+- **Gestión de cuentas/roles:** desde el Panel de Administración (ver guía).
+
+## Pendientes documentados (roadmap, NO bloquean la entrega)
+Ver [auditoria-datos.md](auditoria-datos.md): revista vehicular por fecha · RFC/CURP faltantes · 3 concesiones con titular fallecido · 22 contratos de chofer sin vehículo · guardián `verify:datos`.
+
+## Módulos de pago (siguiente fase, fuera del contrato base)
+Mensualidades/Cobranza · Portal del Agremiado · Alertas · Credenciales. La base y la calidad de datos ya dejan el terreno listo para ellos.
