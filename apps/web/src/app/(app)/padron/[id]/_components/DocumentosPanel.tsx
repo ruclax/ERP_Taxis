@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { Badge, Button, ConfirmDialog } from '@erp/ui/primitives';
-import { FileText, Image as ImageIcon, Upload, Eye, Trash2, Loader2 } from 'lucide-react';
+import { FileText, Image as ImageIcon, Upload, Eye, Trash2, Loader2, IdCard, Shield, ScrollText, CreditCard, FileCheck } from 'lucide-react';
 import { fmtFechaCorta } from '@erp/shared/formatters';
 import type { Documento, TipoDocumento } from '@erp/db/queries/documentos';
 import {
@@ -11,16 +11,31 @@ import {
   eliminarDocumentoAction,
 } from '../documentos-actions';
 
-const TIPOS: TipoDocumento[] = [
-  'LICENCIA', 'POLIZA', 'TITULO_CONCESION', 'INE', 'CURP',
-  'ACTA_NACIMIENTO', 'COMP_DOMICILIO', 'FOTOGRAFIA', 'OTRO',
-];
-
 const TIPO_LABEL: Record<TipoDocumento, string> = {
   LICENCIA: 'Licencia', POLIZA: 'Póliza', TITULO_CONCESION: 'Título de concesión',
   INE: 'INE', CURP: 'CURP', ACTA_NACIMIENTO: 'Acta de nacimiento',
   COMP_DOMICILIO: 'Comp. de domicilio', FOTOGRAFIA: 'Fotografía', OTRO: 'Otro',
 };
+
+const TIPO_ICON: Partial<Record<TipoDocumento, React.ReactNode>> = {
+  LICENCIA: <IdCard size={15} />, POLIZA: <Shield size={15} />, TITULO_CONCESION: <ScrollText size={15} />,
+  INE: <CreditCard size={15} />, CURP: <FileCheck size={15} />, OTRO: <FileText size={15} />,
+};
+
+// Tipos ofrecidos como botón de acceso directo (los más comunes).
+const TIPOS_COMUNES: TipoDocumento[] = ['LICENCIA', 'POLIZA', 'TITULO_CONCESION', 'INE', 'CURP', 'OTRO'];
+
+// Campos que se capturan según el tipo (alimentan la ficha del documento).
+function campos(tipo: TipoDocumento): { numero?: string; vigencia?: boolean } {
+  switch (tipo) {
+    case 'LICENCIA': return { numero: 'No. de licencia', vigencia: true };
+    case 'POLIZA': return { numero: 'No. de póliza', vigencia: true };
+    case 'TITULO_CONCESION': return { numero: 'No. de título', vigencia: false };
+    case 'INE': return { numero: 'Clave de elector', vigencia: true };
+    case 'CURP': return { numero: 'CURP', vigencia: false };
+    default: return { vigencia: true };
+  }
+}
 
 function fmtBytes(n: number | null): string {
   if (!n) return '';
@@ -35,7 +50,6 @@ export default function DocumentosPanel({
   owner,
   expedienteSocioId,
   documentos,
-  compact = false,
   defaultTipo,
 }: {
   owner: { tipo: OwnerTipo; id: string };
@@ -44,28 +58,58 @@ export default function DocumentosPanel({
   compact?: boolean;
   defaultTipo?: TipoDocumento;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [viendo, setViendo] = useState<string | null>(null);
   const [aEliminar, setAEliminar] = useState<Documento | null>(null);
   const [eliminando, setEliminando] = useState(false);
-  const [mostrarForm, setMostrarForm] = useState(!compact);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  // Flujo de carga: se elige el tipo (un clic) → selector de archivo → captura de datos → guardar.
+  const [tipoActivo, setTipoActivo] = useState<TipoDocumento | null>(null);
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [numero, setNumero] = useState('');
+  const [vigencia, setVigencia] = useState('');
+
+  const tiposBoton = defaultTipo ? [defaultTipo] : TIPOS_COMUNES;
+
+  function elegirTipo(t: TipoDocumento) {
     setError(null);
-    const fd = new FormData(e.currentTarget);
+    setTipoActivo(t);
+    setArchivo(null);
+    setNumero('');
+    setVigencia('');
+    // Abre el selector de archivo de inmediato.
+    requestAnimationFrame(() => fileRef.current?.click());
+  }
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    setArchivo(e.target.files?.[0] ?? null);
+  }
+
+  function cancelar() {
+    setArchivo(null);
+    setTipoActivo(null);
+    setNumero('');
+    setVigencia('');
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
+  function guardar() {
+    if (!archivo || !tipoActivo) return;
+    setError(null);
+    const fd = new FormData();
+    fd.set('file', archivo);
+    fd.set('tipo', tipoActivo);
+    if (numero.trim()) fd.set('titulo', `${TIPO_LABEL[tipoActivo]} ${numero.trim()}`);
+    if (vigencia) fd.set('vigencia', vigencia);
     fd.set('owner_tipo', owner.tipo);
     fd.set('owner_id', owner.id);
     fd.set('expediente_socio_id', expedienteSocioId);
     startTransition(async () => {
       const r = await subirDocumentoAction(fd);
       if (!r.ok) setError(r.error);
-      else {
-        formRef.current?.reset();
-        if (compact) setMostrarForm(false);
-      }
+      else cancelar();
     });
   }
 
@@ -86,72 +130,71 @@ export default function DocumentosPanel({
     if (!r.ok) setError(r.error ?? 'No se pudo eliminar el documento');
   }
 
+  const cfg = tipoActivo ? campos(tipoActivo) : {};
+
   return (
     <div className="flex flex-col gap-4">
-      {/* En modo compacto el formulario se colapsa tras un botón para no saturar */}
-      {compact && !mostrarForm && (
-        <button
-          type="button"
-          onClick={() => { setError(null); setMostrarForm(true); }}
-          className="flex w-fit items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-        >
-          <Upload size={14} /> Subir documento
-        </button>
-      )}
+      {/* Botones por tipo — un clic abre el selector de imagen y ya queda clasificado */}
+      <div>
+        <div className="label-erp mb-1.5">{defaultTipo ? 'Cargar documento' : 'Cargar un documento'}</div>
+        <div className="flex flex-wrap gap-2">
+          {tiposBoton.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => elegirTipo(t)}
+              disabled={pending}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {TIPO_ICON[t] ?? <Upload size={15} />} {TIPO_LABEL[t]}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {(mostrarForm || !compact) && (
-        <form
-          ref={formRef}
-          onSubmit={onSubmit}
-          className={`grid gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 ${compact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-[1fr_1fr_auto]'}`}
-        >
-          <div className="flex min-w-0 flex-col gap-1">
-            <label className="label-erp">Archivo (PDF, JPG, PNG, WebP · máx 15 MB)</label>
-            <input
-              type="file"
-              name="file"
-              accept="application/pdf,image/jpeg,image/png,image/webp"
-              required
-              className="w-full min-w-0 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-slate-300"
-            />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf,image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={onFile}
+      />
+
+      {/* Tras elegir el archivo: captura de datos clave del documento */}
+      {archivo && tipoActivo && (
+        <div className="flex flex-col gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+          <div className="flex items-center gap-2 text-sm">
+            <Badge tone="info">{TIPO_LABEL[tipoActivo]}</Badge>
+            <span className="truncate text-slate-600">{archivo.name}</span>
+            <span className="text-xs text-slate-400">({fmtBytes(archivo.size)})</span>
           </div>
-          <div className="flex min-w-0 flex-col gap-1">
-            <label className="label-erp">Tipo de documento</label>
-            <select name="tipo" required defaultValue={defaultTipo ?? ''} className="h-9 min-w-0 rounded-md border border-slate-300 px-2 text-sm">
-              <option value="" disabled>Selecciona…</option>
-              {TIPOS.map((t) => (
-                <option key={t} value={t}>{TIPO_LABEL[t]}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-end gap-2">
-            <Button type="submit" size="sm" iconLeft={pending ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />} disabled={pending}>
-              {pending ? 'Subiendo…' : 'Subir'}
-            </Button>
-            {compact && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setMostrarForm(false)} disabled={pending}>
-                Cancelar
-              </Button>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {cfg.numero && (
+              <label className="flex flex-col gap-1">
+                <span className="label-erp">{cfg.numero}</span>
+                <input value={numero} onChange={(e) => setNumero(e.target.value)}
+                  className="h-9 rounded-md border border-slate-300 px-2 text-sm" placeholder="Opcional" />
+              </label>
+            )}
+            {cfg.vigencia && (
+              <label className="flex flex-col gap-1">
+                <span className="label-erp">Vencimiento</span>
+                <input type="date" value={vigencia} onChange={(e) => setVigencia(e.target.value)}
+                  className="h-9 rounded-md border border-slate-300 px-2 text-sm" />
+              </label>
             )}
           </div>
-          {!compact && (
-            <>
-              <div className="flex min-w-0 flex-col gap-1 md:col-span-1">
-                <label className="label-erp">Título (opcional)</label>
-                <input name="titulo" type="text" placeholder="Ej. Licencia 2026" className="h-9 min-w-0 rounded-md border border-slate-300 px-2 text-sm" />
-              </div>
-              <div className="flex min-w-0 flex-col gap-1">
-                <label className="label-erp">Vigencia (opcional)</label>
-                <input name="vigencia" type="date" className="h-9 min-w-0 rounded-md border border-slate-300 px-2 text-sm" />
-              </div>
-            </>
-          )}
-        </form>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={guardar} disabled={pending}
+              iconLeft={pending ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}>
+              {pending ? 'Guardando…' : `Guardar ${TIPO_LABEL[tipoActivo].toLowerCase()}`}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelar} disabled={pending}>Cancelar</Button>
+          </div>
+        </div>
       )}
 
-      {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       {/* Listado */}
       {documentos.length === 0 ? (
@@ -180,22 +223,12 @@ export default function DocumentosPanel({
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => ver(doc)}
-                    disabled={viendo === doc.id}
-                    iconLeft={viendo === doc.id ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => ver(doc)} disabled={viendo === doc.id}
+                    iconLeft={viendo === doc.id ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}>
                     Ver
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAEliminar(doc)}
-                    className="text-red-600 hover:bg-red-50"
-                    iconLeft={<Trash2 size={14} />}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setAEliminar(doc)}
+                    className="text-red-600 hover:bg-red-50" iconLeft={<Trash2 size={14} />}>
                     Eliminar
                   </Button>
                 </div>
