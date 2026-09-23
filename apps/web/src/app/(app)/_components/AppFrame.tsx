@@ -222,9 +222,12 @@ export function AppFrame({ nombreDisplay, esSuperadmin, roles, modulosPorRol, ch
           breadcrumbs={[{ label: 'Taxi ERP', href: '/dashboard' }, { label: currentItem ? (MODULO_LABELS[currentItem.key] ?? '') : '' }]}
           onMenuClick={() => setOpen(true)}
           actions={
-            esSuperadmin && (
-              <PerspectivaSelector value={activeRol ?? 'sec_general'} onChange={cambiarPerspectiva} />
-            )
+            <>
+              <GuiaContextual />
+              {esSuperadmin && (
+                <PerspectivaSelector value={activeRol ?? 'sec_general'} onChange={cambiarPerspectiva} />
+              )}
+            </>
           }
         />
       }
@@ -239,7 +242,6 @@ export function AppFrame({ nombreDisplay, esSuperadmin, roles, modulosPorRol, ch
         </div>
       )}
       {children}
-      <GuiaContextual />
     </AppShell>
   );
 }
