@@ -376,6 +376,15 @@ export default function NuevoSocioWizard({ sitios }: Props) {
                   />
                 </div>
 
+                {(!(form.telefono_movil || form.telefono_fijo) || !form.fecha_nacimiento) && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Falta {[
+                      !(form.telefono_movil || form.telefono_fijo) && 'un teléfono',
+                      !form.fecha_nacimiento && 'la fecha de nacimiento',
+                    ].filter(Boolean).join(' y ')}. Puedes crear el socio ahora y completarlo después desde el expediente.
+                  </div>
+                )}
+
                 {serverError && (
                   <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     {serverError}

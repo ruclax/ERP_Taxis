@@ -129,6 +129,19 @@ function VehiculoModal({ expedienteSocioId, concesionId, vehiculo, onClose, onSa
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   function guardar() {
+    // Al registrar un vehículo nuevo exigimos los datos clave (en edición se es flexible con datos heredados).
+    if (!vehiculo) {
+      const faltan: string[] = [];
+      if (!f.placas.trim()) faltan.push('placas');
+      if (!f.marca.trim()) faltan.push('marca');
+      if (!f.modelo.trim()) faltan.push('modelo');
+      if (!f.anio.trim()) faltan.push('año');
+      if (!f.numero_serie.trim()) faltan.push('número de serie');
+      if (faltan.length) { onError(`Faltan datos obligatorios: ${faltan.join(', ')}.`); return; }
+    }
+    if (f.anio && (Number(f.anio) < 1970 || Number(f.anio) > new Date().getFullYear() + 1)) {
+      onError('El año del vehículo no es válido.'); return;
+    }
     startTransition(async () => {
       const r = await guardarVehiculoAction(expedienteSocioId, {
         placas: f.placas.trim().toUpperCase() || null, numero_serie: f.numero_serie.trim() || null,
@@ -144,11 +157,11 @@ function VehiculoModal({ expedienteSocioId, concesionId, vehiculo, onClose, onSa
     <Modal title={vehiculo ? 'Editar vehículo' : 'Registrar vehículo'} onClose={onClose} size="lg">
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Input label="Placas" value={f.placas} onChange={(e) => set('placas', e.target.value.toUpperCase())} />
-          <Input label="Número de serie (VIN)" value={f.numero_serie} onChange={(e) => set('numero_serie', e.target.value)} />
-          <Input label="Marca" value={f.marca} onChange={(e) => set('marca', e.target.value)} />
-          <Input label="Modelo" value={f.modelo} onChange={(e) => set('modelo', e.target.value)} />
-          <Input label="Año" type="number" value={f.anio} onChange={(e) => set('anio', e.target.value)} />
+          <Input label="Placas *" value={f.placas} onChange={(e) => set('placas', e.target.value.toUpperCase())} />
+          <Input label="Número de serie (VIN) *" value={f.numero_serie} onChange={(e) => set('numero_serie', e.target.value)} />
+          <Input label="Marca *" value={f.marca} onChange={(e) => set('marca', e.target.value)} />
+          <Input label="Modelo *" value={f.modelo} onChange={(e) => set('modelo', e.target.value)} />
+          <Input label="Año *" type="number" value={f.anio} onChange={(e) => set('anio', e.target.value)} />
           <Input label="Color" value={f.color} onChange={(e) => set('color', e.target.value)} />
           <Input label="Engomado" value={f.engomado} onChange={(e) => set('engomado', e.target.value)} />
           <label className="flex flex-col gap-1.5">
@@ -185,6 +198,14 @@ function PolizaModal({ expedienteSocioId, vehiculoId, poliza, onClose, onSaved, 
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   function guardar() {
+    const faltan: string[] = [];
+    if (!f.numero_poliza.trim()) faltan.push('número de póliza');
+    if (!f.compania.trim()) faltan.push('compañía');
+    if (!f.fecha_vencimiento) faltan.push('fecha de vencimiento');
+    if (faltan.length) { onError(`Faltan datos obligatorios: ${faltan.join(', ')}.`); return; }
+    if (f.fecha_inicio && f.fecha_vencimiento && f.fecha_inicio > f.fecha_vencimiento) {
+      onError('La fecha de inicio no puede ser posterior a la de vencimiento.'); return;
+    }
     startTransition(async () => {
       const r = await guardarPolizaAction(expedienteSocioId, {
         numero_poliza: f.numero_poliza.trim(), compania: f.compania.trim(),
