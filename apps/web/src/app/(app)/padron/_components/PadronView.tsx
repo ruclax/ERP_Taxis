@@ -4,18 +4,18 @@ import { useState, useTransition, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Button, SearchBox, VistasRapidas, FilterSidebar, Drawer,
+  Button, SearchBox, VistasRapidas, FilterSidebar, Drawer, Badge,
   type SearchBoxOption, type VistaRapidaItem, type FilterGroup,
 } from '@erp/ui/primitives';
 import { DataTable, SocioEstatusPill } from '@erp/ui/data';
 import { useRecentSearches } from '@erp/ui/hooks';
 import {
-  ExternalLink, X, Users, CheckCircle, Cross, Repeat,
-  Award, UserMinus, PenLine, CircleSlash, UserPlus, SlidersHorizontal,
+  ExternalLink, X, Users, CheckCircle, Cross,
+  UserMinus, PenLine, CircleSlash, UserPlus, SlidersHorizontal,
 } from 'lucide-react';
 import type { Socio } from '@erp/db';
 import type { ConteosPadron } from '@erp/db/queries/socios';
-import { fmtFechaCorta } from '@erp/shared/formatters';
+import { fmtFechaCorta, clasificarSocio } from '@erp/shared/formatters';
 import { getBrowserSupabase } from '@erp/db/client';
 import { sugerirSocios } from '@erp/db/queries/socios';
 
@@ -156,25 +156,6 @@ export default function PadronView({
         onClick: () => setFiltros({ q: filtros.q, estatus: '', tipo: '', cat: '', firma: 'pendiente' }),
       },
       {
-        id: 'veint',
-        label: 'Veteranos 20+',
-        description: 'SOC_VEINT',
-        icon: <Award size={20} />,
-        tone: 'success',
-        count: conteos.soc_veint,
-        active: filtros.cat === 'veint',
-        onClick: () => setFiltros({ q: filtros.q, estatus: '', tipo: '', cat: 'veint', firma: '' }),
-      },
-      {
-        id: 'tran',
-        label: 'En transición',
-        description: 'SOC_TRAN',
-        icon: <Repeat size={20} />,
-        count: conteos.soc_tran,
-        active: filtros.cat === 'tran',
-        onClick: () => setFiltros({ q: filtros.q, estatus: '', tipo: '', cat: 'tran', firma: '' }),
-      },
-      {
         id: 'fallecidos',
         label: 'Fallecidos',
         icon: <Cross size={20} />,
@@ -205,31 +186,16 @@ export default function PadronView({
     },
     {
       id: 'tipo',
-      label: 'Tipo de socio',
+      label: 'Categoría especial',
       icon: <UserMinus size={16} />,
       type: 'radio',
       value: filtros.tipo || null,
       onChange: (v) => setFiltro('tipo', (v as string) ?? ''),
       defaultCollapsed: true,
       options: [
-        { value: 'CONCESIONARIO', label: 'Concesionario',  count: conteos.concesionarios },
         { value: 'AGENCIA',       label: 'Agencia',        count: conteos.agencia },
         { value: 'INDEPENDIENTE', label: 'Independiente',  count: conteos.independientes },
         { value: 'HEREDERO',      label: 'Heredero',       count: conteos.herederos },
-      ],
-    },
-    {
-      id: 'cat',
-      label: 'Categoría sindical',
-      icon: <Award size={16} />,
-      type: 'radio',
-      value: filtros.cat || null,
-      onChange: (v) => setFiltro('cat', (v as string) ?? ''),
-      defaultCollapsed: true,
-      options: [
-        { value: 'act',   label: 'Activo (SOC_ACT)',  count: conteos.soc_act },
-        { value: 'veint', label: '20+ años (SOC_VEINT)', count: conteos.soc_veint },
-        { value: 'tran',  label: 'Transición (SOC_TRAN)', count: conteos.soc_tran },
       ],
     },
     {
@@ -365,8 +331,25 @@ export default function PadronView({
                 ),
               },
               {
-                key: 'tipo', header: 'Tipo',
-                cell: (s) => <span className="text-xs uppercase tracking-wide text-slate-500">{s.tipo_socio}</span>,
+                key: 'tipo', header: 'Clasificación',
+                cell: (s) => {
+                  const row = s as unknown as { concesiones?: { count: number }[] | null; ocupacion?: string | null; tipo_socio?: string | null };
+                  const cl = clasificarSocio({
+                    tipoSocio: row.tipo_socio,
+                    ocupacion: row.ocupacion,
+                    tieneConcesion: (row.concesiones?.[0]?.count ?? 0) > 0,
+                  });
+                  return (
+                    <div className="flex flex-wrap gap-1">
+                      {cl.esConcesionario && <Badge tone="info">Concesionario</Badge>}
+                      {cl.esChofer && <Badge tone="neutral">Chofer</Badge>}
+                      {cl.categoriaEspecial && <Badge tone="neutral">{cl.categoriaEspecial}</Badge>}
+                      {!cl.esConcesionario && !cl.esChofer && !cl.categoriaEspecial && (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </div>
+                  );
+                },
                 hideOn: 'md',
               },
               {
@@ -377,17 +360,6 @@ export default function PadronView({
               {
                 key: 'estatus', header: 'Estado',
                 cell: (s) => <SocioEstatusPill estatus={s.estatus} />,
-              },
-              {
-                key: 'flags', header: 'Marcas',
-                cell: (s) => (
-                  <div className="flex gap-1 text-[10px] uppercase">
-                    {s.soc_act && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-700">Act</span>}
-                    {s.soc_veint && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">20+</span>}
-                    {s.soc_tran && <span className="rounded bg-sky-100 px-1.5 py-0.5 text-sky-700">Tran</span>}
-                  </div>
-                ),
-                hideOn: 'md',
               },
               {
                 key: 'open', header: '',

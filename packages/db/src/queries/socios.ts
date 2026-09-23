@@ -39,7 +39,7 @@ export async function listarSocios(sb: SB, f: SociosListFilters = {}) {
     .select(
       `id, codigo_agremiado, rfc, curp, nombre_completo, escalafon_numero, tipo_escalafon,
        tipo_socio, estatus, soc_act, soc_veint, soc_tran, turno, firma_actual, ocupacion,
-       fecha_ingreso, fecha_nacimiento, foto_url, comentarios`,
+       fecha_ingreso, fecha_nacimiento, foto_url, comentarios, concesiones(count)`,
       { count: 'exact' }
     );
 
