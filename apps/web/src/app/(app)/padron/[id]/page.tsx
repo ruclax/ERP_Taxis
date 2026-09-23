@@ -5,7 +5,7 @@ import { obtenerSocio, listarHistorialEstatus } from '@erp/db/queries/socios';
 import { listarDocumentosExpediente, type Documento } from '@erp/db/queries/documentos';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
 import { SocioEstatusPill, ConcesionEstadoPill } from '@erp/ui/data';
-import { fmtFechaCorta, antiguedadTexto, estadoPolizaVigente } from '@erp/shared/formatters';
+import { fmtFechaCorta, antiguedadTexto, estadoPolizaVigente, clasificarSocio } from '@erp/shared/formatters';
 import { ChevronRight, AlertTriangle, Printer } from 'lucide-react';
 import Link from 'next/link';
 import ChoferesPanel from './_components/ChoferesPanel';
@@ -64,6 +64,11 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
   } catch { adeudosPend = 0; }
 
   const alertas = alertasDe(socio, adeudosPend);
+  const clasif = clasificarSocio({
+    tipoSocio: socio.tipo_socio as string,
+    ocupacion: socio.ocupacion as string | null,
+    tieneConcesion: ((socio.concesiones as unknown[] | null)?.length ?? 0) > 0,
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -87,10 +92,15 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
               <span className="mono rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
                 {socio.codigo_agremiado}
               </span>
-              <span className="text-slate-500"><span className="label-erp">Tipo:</span> {socio.tipo_socio}</span>
+              {clasif.esConcesionario && <Badge tone="info">Concesionario</Badge>}
+              {clasif.esChofer && <Badge tone="neutral">Chofer</Badge>}
+              {clasif.categoriaEspecial && <Badge tone="neutral">{clasif.categoriaEspecial}</Badge>}
+              {!clasif.esConcesionario && !clasif.esChofer && !clasif.categoriaEspecial && (
+                <span className="text-xs text-slate-400">Sin clasificación</span>
+              )}
               {socio.escalafon_numero != null && socio.tipo_escalafon !== 'NINGUNO' && (
                 <Badge tone={socio.tipo_escalafon === 'ASPIRANTE' ? 'warn' : 'info'}>
-                  {socio.tipo_escalafon === 'ASPIRANTE' ? 'Aspirante' : 'Concesionario'} #{socio.escalafon_numero}
+                  Escalafón: {socio.tipo_escalafon === 'ASPIRANTE' ? 'Aspirante' : 'Concesionario'} #{socio.escalafon_numero}
                 </Badge>
               )}
               <SocioEstatusPill estatus={socio.estatus} />

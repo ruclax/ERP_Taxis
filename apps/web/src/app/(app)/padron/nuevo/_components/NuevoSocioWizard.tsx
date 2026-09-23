@@ -43,7 +43,7 @@ const initialForm: Form = {
   curp: '',
   fecha_nacimiento: '',
   genero: '',
-  tipo_socio: 'CONCESIONARIO',
+  tipo_socio: 'OTRO',
   fecha_ingreso: '',
   telefono_movil: '',
   telefono_fijo: '',
@@ -175,16 +175,15 @@ export default function NuevoSocioWizard({ sitios }: Props) {
                   onChange={(e) => set('fecha_nacimiento', e.target.value)}
                 />
                 <SelectField
-                  label="Tipo de socio *"
+                  label="Categoría especial (opcional)"
                   value={form.tipo_socio}
                   onChange={(v) => set('tipo_socio', v as Form['tipo_socio'])}
                   options={[
-                    { value: 'CONCESIONARIO', label: 'Concesionario' },
+                    { value: 'OTRO',          label: 'Ninguna / General' },
                     { value: 'AGENCIA',       label: 'Agencia' },
                     { value: 'PERMISIONARIO', label: 'Permisionario' },
                     { value: 'INDEPENDIENTE', label: 'Independiente' },
                     { value: 'HEREDERO',      label: 'Heredero' },
-                    { value: 'OTRO',          label: 'Otro' },
                   ]}
                 />
                 <Input
@@ -194,6 +193,10 @@ export default function NuevoSocioWizard({ sitios }: Props) {
                   value={form.fecha_ingreso}
                   onChange={(e) => set('fecha_ingreso', e.target.value)}
                 />
+                <p className="text-sm text-secondary md:col-span-2">
+                  <strong>Concesionario</strong> y <strong>Chofer</strong> se asignan solos: “Concesionario” si agregas una concesión (paso 3),
+                  y “Chofer” según la ocupación. Aquí solo eliges una categoría especial si aplica.
+                </p>
               </div>
             ),
           },
@@ -336,7 +339,10 @@ export default function NuevoSocioWizard({ sitios }: Props) {
                 <Card>
                   <CardBody className="flex flex-col gap-3">
                     <ResumenRow titulo="Nombre" valor={form.nombre_completo || '—'} />
-                    <ResumenRow titulo="Tipo" valor={form.tipo_socio} />
+                    <ResumenRow titulo="Categoría" valor={form.tipo_socio === 'OTRO' ? 'General' : form.tipo_socio} />
+                    {form.agregar_concesion && form.numero_concesion.trim() && (
+                      <ResumenRow titulo="Clasificación" valor="Concesionario (por su concesión)" />
+                    )}
                     {form.rfc && <ResumenRow titulo="RFC" valor={form.rfc} />}
                     {form.curp && <ResumenRow titulo="CURP" valor={form.curp} />}
                     {form.fecha_nacimiento && <ResumenRow titulo="Nacimiento" valor={form.fecha_nacimiento} />}

@@ -41,6 +41,32 @@ export function estadoVencimiento(dias: number | null, umbralPorVencer = 30): 'V
 }
 
 /**
+ * Clasificación DERIVADA de un agremiado (no se guarda; se calcula de la realidad).
+ * - esConcesionario: es titular de al menos una concesión.
+ * - esChofer: su ocupación indica "chofer" (dato que el sindicato sí mantiene).
+ * - categoriaEspecial: casos no derivables (Agencia/Permisionario/Independiente/Heredero).
+ * Una persona puede ser ambos, solo uno, o ninguno.
+ */
+export interface ClasificacionSocio {
+  esConcesionario: boolean;
+  esChofer: boolean;
+  categoriaEspecial: string | null;
+}
+export function clasificarSocio(input: {
+  tipoSocio?: string | null;
+  ocupacion?: string | null;
+  tieneConcesion: boolean;
+}): ClasificacionSocio {
+  const t = (input.tipoSocio ?? '').toUpperCase();
+  const categoriaEspecial = ['AGENCIA', 'PERMISIONARIO', 'INDEPENDIENTE', 'HEREDERO'].includes(t) ? t : null;
+  return {
+    esConcesionario: input.tieneConcesion,
+    esChofer: /chofer/i.test(input.ocupacion ?? ''),
+    categoriaEspecial,
+  };
+}
+
+/**
  * Estado real de una póliza, derivado de la fecha de vencimiento (tiempo real).
  * El estado NO se guarda: se calcula al leer, así nunca queda desactualizado.
  * `CANCELADA` sí es un estado manual y se respeta si viene guardado.
