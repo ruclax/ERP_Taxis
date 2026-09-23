@@ -6,10 +6,16 @@
 >
 > Dos mecanismos: **derivar al leer** (estados) y **auto-registrar al cambiar** (historiales).
 
-## Decisiones pendientes de confirmar (dominio) antes de Fase 0
-1. **`SOC_VEINT`** = ¿cuota 25% (= `tipo_padron` CUOTA_25)? → para revertir migración 054 correctamente.
-2. **SOC_ACT/VEINT/TRAN**: ¿quitar columnas o solo dejar de usarlas/mostrarlas (deprecar)?
-3. **`es_chofer`**: derivar de `ocupacion` (contiene "chofer", 917) + `concesion_choferes`. ¿OK?
+## Decisiones (resueltas)
+1. **`SOC_VEINT`**: Daniel.docx no la define → no es requisito. La migración 054 (que la recalculó por antigüedad) quedó **superada/anulada**; se deja tal cual (Opción B, sin re-sincronizar) porque la columna está deprecada y nadie la usa.
+2. **SOC_ACT/VEINT/TRAN**: se **deprecan** — se dejan de usar/mostrar en la app, pero se **conservan las columnas** como respaldo histórico.
+3. **`es_chofer`**: se deriva de `ocupacion` (contiene "chofer") + `concesion_choferes`. ✅
+
+## Fase 0 — ✅ HECHA
+- Alta: `tipo_socio` pasó a "categoría especial" (default OTRO, ya no "Concesionario"); concesionario/chofer se derivan.
+- Expediente y lista del Padrón: muestran clasificación **derivada** (Concesionario/Chofer) vía `clasificarSocio` en `@erp/shared`.
+- SOC_* fuera de la UI (columna de marcas y filtros/vistas retirados); conservados en BD como respaldo.
+- Los **621 mal etiquetados se auto-corrigieron** (ya no se muestran como concesionario si no tienen concesión).
 
 ---
 
