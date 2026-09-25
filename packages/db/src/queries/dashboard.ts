@@ -39,6 +39,39 @@ export async function statsGenerales(sb: SB) {
   };
 }
 
+/** Resumen de completitud del padrón (agremiados activos con datos importantes faltantes). */
+export async function resumenCompletitud(sb: SB) {
+  const activo = () => sb.from('socios').select('id', { count: 'exact', head: true }).eq('estatus', 'ACTIVO');
+  const [{ count: total }, { count: sinRfc }, { count: sinCurp }, { count: sinFecha }, { count: incompletos }] = await Promise.all([
+    activo(),
+    activo().is('rfc', null),
+    activo().is('curp', null),
+    activo().is('fecha_nacimiento', null),
+    activo().or('rfc.is.null,curp.is.null,fecha_nacimiento.is.null'),
+  ]);
+  return { total: total ?? 0, sin_rfc: sinRfc ?? 0, sin_curp: sinCurp ?? 0, sin_fecha: sinFecha ?? 0, incompletos: incompletos ?? 0 };
+}
+
+/** Lista de agremiados activos con datos importantes por completar (worklist). */
+export async function agremiadosIncompletos(sb: SB, limit = 8) {
+  const { data } = await sb
+    .from('socios')
+    .select('id, nombre_completo, codigo_agremiado, rfc, curp, fecha_nacimiento')
+    .eq('estatus', 'ACTIVO')
+    .or('rfc.is.null,curp.is.null,fecha_nacimiento.is.null')
+    .order('codigo_agremiado')
+    .limit(limit);
+  return (data ?? []).map((s) => {
+    const r = s as { id: string; nombre_completo: string; codigo_agremiado: string; rfc: string | null; curp: string | null; fecha_nacimiento: string | null };
+    return {
+      id: r.id,
+      nombre: r.nombre_completo,
+      codigo: r.codigo_agremiado,
+      falta: [!r.rfc && 'RFC', !r.curp && 'CURP', !r.fecha_nacimiento && 'nacimiento'].filter(Boolean) as string[],
+    };
+  });
+}
+
 export async function pendientesAtencion(sb: SB) {
   const hoy = new Date().toISOString().slice(0, 10);
   const en30 = new Date();

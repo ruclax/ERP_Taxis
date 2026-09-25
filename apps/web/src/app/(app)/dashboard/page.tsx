@@ -4,6 +4,7 @@ import { createSupabaseServer } from '@erp/db/client/server';
 import {
   statsGenerales, vencimientosProximos, distribucionPorSitio, pendientesAtencion,
   vencimientosPorMes, estadoPolizas, altasBajasPorMes,
+  resumenCompletitud, agremiadosIncompletos,
 } from '@erp/db/queries/dashboard';
 import { conteosVencimientos } from '@erp/db/queries/polizas';
 import { VencimientosPorMesChart, EstadoPolizasChart, AltasBajasChart } from './_components/DashboardCharts';
@@ -11,13 +12,13 @@ import { KpiCard } from '@erp/ui/data';
 import { Card, CardBody, CardHeader, Badge } from '@erp/ui/primitives';
 import {
   Users, Car, Shield, AlertTriangle, HeartHandshake,
-  MapPin, IdCard, FileWarning, UserPlus, ChevronRight, ArrowRight,
+  MapPin, IdCard, UserPlus, ChevronRight, ArrowRight,
 } from 'lucide-react';
 import { fmtFechaCorta, diasParaVencer } from '@erp/shared/formatters';
 
 export default async function DashboardPage() {
   const supabase = createSupabaseServer(await cookies());
-  const [stats, vencimientos, sitios, pend, porMes, estadoPol, altasBajas, conteosVenc] = await Promise.all([
+  const [stats, vencimientos, sitios, pend, porMes, estadoPol, altasBajas, conteosVenc, completitud, incompletos] = await Promise.all([
     statsGenerales(supabase),
     vencimientosProximos(supabase, 30),
     distribucionPorSitio(supabase),
@@ -26,7 +27,19 @@ export default async function DashboardPage() {
     estadoPolizas(supabase),
     altasBajasPorMes(supabase, 6),
     conteosVencimientos(supabase),
+    resumenCompletitud(supabase),
+    agremiadosIncompletos(supabase, 8),
   ]);
+
+  // Rol activo: el Sec. General ve SOLO el indicador de datos pendientes; los roles
+  // operativos ven además la lista accionable para completarlos.
+  const { data: { user } } = await supabase.auth.getUser();
+  let soloIndicador = false;
+  if (user) {
+    const { data: roles } = await supabase.from('usuarios_roles').select('rol_codigo').eq('user_id', user.id).eq('activo', true);
+    const cods = (roles ?? []).map((r) => (r as { rol_codigo: string }).rol_codigo);
+    soloIndicador = cods.length > 0 && cods.every((c) => c === 'sec_general');
+  }
 
   // Indicadores de vencimiento por ventana → llevan a la lista filtrada de Pólizas.
   const vencInd = [
@@ -42,7 +55,6 @@ export default async function DashboardPage() {
     { n: pend.licencias_por_vencer, label: 'Licencias por vencer', hint: 'Próximos 30 días', href: '/choferes?licencia=POR_VENCER', icon: <IdCard size={18} />, tone: 'warn' as const },
     { n: stats.antidoping_alertas, label: 'Antidoping por vencer', hint: 'Revisar cumplimiento', href: '/choferes?antidoping=VENCIDA', icon: <AlertTriangle size={18} />, tone: 'warn' as const },
     { n: pend.sitios_sin_delegado, label: 'Sitios sin delegado', hint: 'Asignar responsable', href: '/sitios', icon: <MapPin size={18} />, tone: 'warn' as const },
-    { n: pend.socios_sin_rfc, label: 'Socios sin RFC', hint: 'Completar expediente', href: '/padron', icon: <FileWarning size={18} />, tone: 'info' as const },
   ].filter((a) => a.n > 0);
 
   return (
@@ -94,6 +106,55 @@ export default async function DashboardPage() {
                 </li>
               ))}
             </ul>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Datos por completar (calidad de datos del padrón) */}
+      {completitud.incompletos > 0 && (
+        <Card>
+          <CardHeader
+            title="Datos por completar"
+            subtitle={`${completitud.incompletos.toLocaleString('es-MX')} de ${completitud.total.toLocaleString('es-MX')} agremiados activos tienen datos importantes pendientes.`}
+          />
+          <CardBody>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Sin RFC', n: completitud.sin_rfc },
+                { label: 'Sin CURP', n: completitud.sin_curp },
+                { label: 'Sin fecha de nac.', n: completitud.sin_fecha },
+              ].map((c) => (
+                <div key={c.label} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                  <div className="num text-2xl font-bold tabular-nums text-amber-700">{c.n.toLocaleString('es-MX')}</div>
+                  <div className="mt-0.5 text-xs text-slate-500">{c.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {soloIndicador ? (
+              <p className="mt-3 text-sm text-slate-500">
+                Estos expedientes los completa la <strong>Secretaría de Organización</strong>.
+              </p>
+            ) : (
+              <>
+                <div className="label-erp mt-4 mb-1">Por resolver (toca para completar)</div>
+                <ul className="divide-y divide-slate-100">
+                  {incompletos.map((s) => (
+                    <li key={s.id}>
+                      <Link href={`/padron/${s.id}`} className="flex items-center gap-3 py-2.5 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm text-slate-700">{s.nombre}</div>
+                          <div className="mono text-xs text-slate-400">{s.codigo}</div>
+                        </div>
+                        <span className="shrink-0 text-xs text-amber-700">Falta: {s.falta.join(', ')}</span>
+                        <ChevronRight size={16} className="shrink-0 text-slate-300" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/padron" className="mt-2 inline-block text-sm font-medium text-blue-700 hover:underline">Ver el padrón completo →</Link>
+              </>
+            )}
           </CardBody>
         </Card>
       )}
