@@ -27,4 +27,11 @@
 
 Extiende el panel "Requiere atención" ya existente en el tablero.
 
-## Orden: A → B → C. (Confirmar: ¿RFC/CURP obligatorios sin excepción? → sí, por ahora.)
+## Fase D — Revisión del proceso de registro (bug)
+El usuario reporta un error al dar de alta. Diagnóstico:
+- El proceso de fondo (`crear_socio_completo`) **funciona** en todos los casos probados (mínimo, con dirección vacía, con concesión) — revertidos, sin guardar.
+- La página de alta (server) está correcta.
+- **Hallazgo:** si la validación del formulario falla, el alta mostraba solo **"Datos inválidos"** sin decir qué campo → poco útil. **Corregido:** ahora muestra el detalle por campo.
+- Pendiente: confirmar con el usuario el mensaje exacto que ve (con el detalle ya visible) para descartar cualquier caso específico.
+
+## Orden: A → B → C. (RFC/CURP obligatorios sin excepción → sí, por ahora.)

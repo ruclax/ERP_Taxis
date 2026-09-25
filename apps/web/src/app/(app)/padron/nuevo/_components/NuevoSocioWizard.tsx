@@ -135,7 +135,9 @@ export default function NuevoSocioWizard({ sitios }: Props) {
       if (res.ok) {
         router.push(`/padron/${res.socioId}`);
       } else {
-        setServerError(res.error);
+        // Mostrar el detalle por campo cuando exista (en vez de "Datos inválidos" a secas).
+        const detalle = res.fieldErrors ? Object.entries(res.fieldErrors).map(([k, v]) => `${k}: ${v}`).join(' · ') : '';
+        setServerError(detalle ? `${res.error} — ${detalle}` : res.error);
       }
     });
   }
