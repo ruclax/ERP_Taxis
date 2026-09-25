@@ -287,6 +287,27 @@ export async function obtenerSocio(sb: SB, id: string) {
   return data;
 }
 
+/** Busca un agremiado existente por RFC o CURP (para evitar duplicados en el alta). */
+export async function buscarSocioPorClave(
+  sb: SB,
+  clave: { rfc?: string | null; curp?: string | null },
+): Promise<{ id: string; nombre_completo: string; codigo_agremiado: string } | null> {
+  const ors: string[] = [];
+  const rfc = clave.rfc?.trim().toUpperCase();
+  const curp = clave.curp?.trim().toUpperCase();
+  if (rfc && /^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/.test(rfc)) ors.push(`rfc.eq.${rfc}`);
+  if (curp && /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/.test(curp)) ors.push(`curp.eq.${curp}`);
+  if (ors.length === 0) return null;
+  const { data, error } = await sb
+    .from('socios')
+    .select('id, nombre_completo, codigo_agremiado')
+    .or(ors.join(','))
+    .limit(1)
+    .maybeSingle();
+  if (error) return null;
+  return (data as { id: string; nombre_completo: string; codigo_agremiado: string } | null) ?? null;
+}
+
 export interface SocioSugerencia {
   id: string;
   nombre: string;

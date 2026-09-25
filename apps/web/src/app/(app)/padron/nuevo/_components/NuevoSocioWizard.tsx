@@ -2,8 +2,15 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Wizard, Input, Card, CardBody } from '@erp/ui/primitives';
+import { getBrowserSupabase } from '@erp/db/client';
+import { buscarSocioPorClave } from '@erp/db/queries/socios';
 import { crearSocio, type NuevoSocioForm } from '../actions';
+
+const RFC_RE = /^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/;
+const CURP_RE = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/;
+type DupSocio = { id: string; nombre_completo: string; codigo_agremiado: string };
 
 interface Props {
   sitios: { id: string; nombre: string }[];
@@ -67,17 +74,28 @@ export default function NuevoSocioWizard({ sitios }: Props) {
   const [form, setForm] = useState<Form>(initialForm);
   const [pending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [dup, setDup] = useState<DupSocio | null>(null);
 
   function set<K extends keyof Form>(key: K, value: Form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function verificarDuplicado() {
+    const rfc = form.rfc.trim().toUpperCase();
+    const curp = form.curp.trim().toUpperCase();
+    if (!RFC_RE.test(rfc) && !CURP_RE.test(curp)) { setDup(null); return; }
+    try {
+      const found = await buscarSocioPorClave(getBrowserSupabase(), { rfc, curp });
+      setDup(found);
+    } catch { setDup(null); }
   }
 
   function buildPayload(): NuevoSocioForm {
     return {
       socio: {
         nombre_completo: form.nombre_completo.trim(),
-        rfc: form.rfc.trim() || null,
-        curp: form.curp.trim() || null,
+        rfc: form.rfc.trim().toUpperCase(),
+        curp: form.curp.trim().toUpperCase(),
         fecha_nacimiento: form.fecha_nacimiento || null,
         fecha_ingreso: form.fecha_ingreso || null,
         tipo_socio: form.tipo_socio,
@@ -137,10 +155,21 @@ export default function NuevoSocioWizard({ sitios }: Props) {
             description: 'Nombre, RFC y tipo',
             canContinue: () => {
               if (form.nombre_completo.trim().length < 3) return 'Captura el nombre completo del socio.';
+              if (!RFC_RE.test(form.rfc.trim().toUpperCase())) return 'Captura un RFC válido (13 caracteres).';
+              if (!CURP_RE.test(form.curp.trim().toUpperCase())) return 'Captura una CURP válida (18 caracteres).';
+              if (dup) return 'Ese RFC/CURP ya está registrado. Abre el perfil existente.';
               return true;
             },
             render: () => (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {dup && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:col-span-2">
+                    <span>Ya existe un agremiado con ese RFC/CURP: <strong>{dup.nombre_completo}</strong> ({dup.codigo_agremiado}).</span>
+                    <Link href={`/padron/${dup.id}`} className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700">
+                      Ir a su perfil →
+                    </Link>
+                  </div>
+                )}
                 <div className="md:col-span-2">
                   <Input
                     label="Nombre completo *"
@@ -152,19 +181,21 @@ export default function NuevoSocioWizard({ sitios }: Props) {
                   />
                 </div>
                 <Input
-                  label="RFC"
-                  placeholder="13 caracteres (opcional)"
+                  label="RFC *"
+                  placeholder="13 caracteres"
                   inputSize="lg"
                   value={form.rfc}
                   onChange={(e) => set('rfc', e.target.value.toUpperCase())}
+                  onBlur={verificarDuplicado}
                   maxLength={13}
                 />
                 <Input
-                  label="CURP"
-                  placeholder="18 caracteres (opcional)"
+                  label="CURP *"
+                  placeholder="18 caracteres"
                   inputSize="lg"
                   value={form.curp}
                   onChange={(e) => set('curp', e.target.value.toUpperCase())}
+                  onBlur={verificarDuplicado}
                   maxLength={18}
                 />
                 <Input

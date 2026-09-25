@@ -20,6 +20,19 @@ export const curpSchema = z
   .nullable()
   .optional();
 
+// Variantes OBLIGATORIAS (para el alta: RFC/CURP fungen como llave anti-duplicados).
+export const rfcRequeridoSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/, 'RFC inválido (13 caracteres)');
+
+export const curpRequeridoSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/, 'CURP inválida (18 caracteres)');
+
 export const concesionSchema = z
   .string()
   .trim()
@@ -70,7 +83,11 @@ export type SocioInsert = z.infer<typeof socioInsertSchema>;
 
 // Shape extendido del wizard de alta (socio + dirección + contacto + concesión opcional)
 export const nuevoSocioFormSchema = z.object({
-  socio: socioInsertSchema,
+  // En el alta, RFC y CURP son obligatorios (llave para no duplicar agremiados).
+  socio: socioInsertSchema.extend({
+    rfc: rfcRequeridoSchema,
+    curp: curpRequeridoSchema,
+  }),
   direccion: z.object({
     calle: z.string().trim().optional(),
     numero_ext: z.string().trim().optional(),
