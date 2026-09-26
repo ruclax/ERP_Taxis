@@ -8,9 +8,13 @@ import {
   type NuevoSocioForm,
 } from '@erp/shared/validators';
 
-export type { NuevoSocioForm };
+// IMPORTANTE: un archivo 'use server' solo puede exportar funciones async (server
+// actions). Exportar tipos aquí rompe en producción: el transform de server-actions
+// deja una referencia al tipo como valor → "ReferenceError: NuevoSocioForm is not
+// defined" al evaluar el módulo → 500 en CUALQUIER llamada a la acción.
+// Los tipos se importan desde '@erp/shared/validators' donde se necesiten.
 
-export type CrearSocioResult =
+type CrearSocioResult =
   | { ok: true; socioId: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
 

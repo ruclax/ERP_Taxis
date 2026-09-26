@@ -27,11 +27,12 @@
 
 Extiende el panel "Requiere atención" ya existente en el tablero.
 
-## Fase D — Revisión del proceso de registro (bug)
-El usuario reporta un error al dar de alta. Diagnóstico:
-- El proceso de fondo (`crear_socio_completo`) **funciona** en todos los casos probados (mínimo, con dirección vacía, con concesión) — revertidos, sin guardar.
-- La página de alta (server) está correcta.
-- **Hallazgo:** si la validación del formulario falla, el alta mostraba solo **"Datos inválidos"** sin decir qué campo → poco útil. **Corregido:** ahora muestra el detalle por campo.
-- Pendiente: confirmar con el usuario el mensaje exacto que ve (con el detalle ya visible) para descartar cualquier caso específico.
+## Fase D — Revisión del proceso de registro (bug) — RESUELTO
+El usuario reportaba **500 ("A server error occurred") al pulsar "Crear socio"**; el socio NO se creaba. Diagnóstico definitivo (reproducido con build de producción local + POST real al Server Action, leyendo el stack del servidor):
+
+- **Causa raíz:** `apps/web/.../padron/nuevo/actions.ts` (archivo `'use server'`) **exportaba un tipo** (`export type { NuevoSocioForm }`). Un módulo `'use server'` **solo puede exportar funciones async** (server actions). El transform de server-actions de Next 16/Turbopack dejaba una referencia al tipo como *valor* en el bundle de producción → **`ReferenceError: NuevoSocioForm is not defined`** al **evaluar el módulo** → 500 en CUALQUIER llamada a `crearSocio`, **antes** de entrar a su `try/catch` (por eso el hardening no ayudaba y el socio nunca se creaba).
+- **No lo detectan** `pnpm typecheck` ni `pnpm build` (compilan bien); solo se manifiesta en runtime de producción.
+- **Fix:** quitar toda exportación de tipos del archivo `'use server'`; el wizard importa `NuevoSocioForm` desde `@erp/shared/validators` y `CrearSocioResult` dejó de exportarse.
+- Verificado: el mismo Server Action pasó de **500 → 200** creando el socio (prueba revertida). `crear_socio_completo` (RPC, SECURITY INVOKER) ya estaba correcto.
 
 ## Orden: A → B → C. (RFC/CURP obligatorios sin excepción → sí, por ahora.)

@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Wizard, Input, Card, CardBody } from '@erp/ui/primitives';
 import { getBrowserSupabase } from '@erp/db/client';
 import { buscarSocioPorClave } from '@erp/db/queries/socios';
-import { crearSocio, type NuevoSocioForm } from '../actions';
+import { crearSocio } from '../actions';
+import type { NuevoSocioForm } from '@erp/shared/validators';
 
 const RFC_RE = /^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/;
 const CURP_RE = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/;
